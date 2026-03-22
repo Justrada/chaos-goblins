@@ -55,7 +55,7 @@ export default function GameDashboard({
         </div>
 
         {/* Central Meters Row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Suspicion Meter */}
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 text-center">
             <p className="text-xs uppercase tracking-widest text-gray-500">Suspicion</p>
@@ -214,7 +214,7 @@ export default function GameDashboard({
         )}
 
         {/* Player Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {nonGMPlayers.map((p) => (
             <PlayerCard
               key={p.id}

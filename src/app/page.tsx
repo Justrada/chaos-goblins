@@ -24,7 +24,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4 py-6">
       <div className="max-w-sm w-full space-y-10 text-center">
         <div>
           <h1 className="text-6xl font-black text-green-400 tracking-tight leading-none">
@@ -61,17 +61,17 @@ export default function Home() {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="ROOM CODE"
+              placeholder="CODE"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && joinRoom()}
               maxLength={4}
-              className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-600 text-center text-xl font-mono tracking-[0.3em] focus:outline-none focus:border-green-400"
+              className="flex-1 min-w-0 px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-600 text-center text-xl font-mono tracking-[0.2em] focus:outline-none focus:border-green-400"
             />
             <button
               onClick={joinRoom}
               disabled={joinCode.trim().length < 4}
-              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 rounded-lg font-bold transition-colors"
+              className="shrink-0 px-5 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 rounded-lg font-bold transition-colors"
             >
               Join
             </button>
