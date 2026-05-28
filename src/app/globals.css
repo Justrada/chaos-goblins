@@ -1,26 +1,352 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000033;
+  --foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #000033;
+  color: #ffffff;
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', cursive;
+  cursor: default;
+}
+
+/* ========================================
+   STARFIELD BACKGROUND
+   ======================================== */
+.bg-starfield {
+  background-color: #000033;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 30% 60%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 50% 10%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 90% 40%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 85%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 45% 45%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 80% 15%, #ffffff 100%, transparent),
+    radial-gradient(2px 2px at 25% 35%, #ffff00 100%, transparent),
+    radial-gradient(2px 2px at 65% 70%, #ffff00 100%, transparent),
+    radial-gradient(1px 1px at 5% 50%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 55% 90%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 35% 15%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 55%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 20% 70%, #ffffff 100%, transparent),
+    radial-gradient(2px 2px at 75% 25%, #ffff00 100%, transparent);
+}
+
+/* ========================================
+   BEVELED 3D PANELS (Windows 98 style)
+   ======================================== */
+.panel-raised {
+  background: #c0c0c0;
+  color: #000000;
+  border: 3px outset #c0c0c0;
+  padding: 12px;
+}
+
+.panel-sunken {
+  background: #c0c0c0;
+  color: #000000;
+  border: 3px inset #c0c0c0;
+  padding: 12px;
+}
+
+.panel-blue {
+  background: #000080;
+  color: #ffffff;
+  border: 3px outset #4040c0;
+}
+
+.panel-yellow {
+  background: #ffff00;
+  color: #000000;
+  border: 3px outset #ffff80;
+}
+
+.panel-lime {
+  background: #00ff00;
+  color: #000000;
+  border: 3px outset #80ff80;
+}
+
+.panel-red {
+  background: #ff0000;
+  color: #ffffff;
+  border: 3px outset #ff8080;
+}
+
+.panel-purple {
+  background: #800080;
+  color: #ffffff;
+  border: 3px outset #c040c0;
+}
+
+.panel-cyan {
+  background: #008080;
+  color: #ffffff;
+  border: 3px outset #40c0c0;
+}
+
+.panel-white {
+  background: #ffffff;
+  color: #000000;
+  border: 3px inset #c0c0c0;
+}
+
+/* ========================================
+   WIN98 3D BUTTONS
+   ======================================== */
+.btn-98 {
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 10px 24px;
+  border: 3px outset #c0c0c0;
+  background: #c0c0c0;
+  color: #000000;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.btn-98:hover {
+  background: #d4d4d4;
+}
+
+.btn-98:active {
+  border-style: inset;
+}
+
+.btn-98:disabled {
+  color: #808080;
+  cursor: not-allowed;
+}
+
+.btn-98-green {
+  background: #00cc00;
+  border-color: #00cc00;
+  color: #000;
+}
+.btn-98-green:hover { background: #00ee00; }
+
+.btn-98-red {
+  background: #cc0000;
+  border-color: #cc0000;
+  color: #fff;
+}
+.btn-98-red:hover { background: #ee0000; }
+
+.btn-98-blue {
+  background: #0000cc;
+  border-color: #0000cc;
+  color: #fff;
+}
+.btn-98-blue:hover { background: #0000ee; }
+
+.btn-98-yellow {
+  background: #cccc00;
+  border-color: #cccc00;
+  color: #000;
+}
+.btn-98-yellow:hover { background: #eeee00; }
+
+.btn-98-purple {
+  background: #9900cc;
+  border-color: #9900cc;
+  color: #fff;
+}
+.btn-98-purple:hover { background: #aa00ee; }
+
+.btn-98-cyan {
+  background: #009999;
+  border-color: #009999;
+  color: #fff;
+}
+.btn-98-cyan:hover { background: #00bbbb; }
+
+.btn-98-orange {
+  background: #ff6600;
+  border-color: #ff6600;
+  color: #000;
+}
+.btn-98-orange:hover { background: #ff8833; }
+
+.btn-98-big {
+  font-size: 1.5rem;
+  padding: 16px 36px;
+  border-width: 4px;
+}
+
+.btn-98-xl {
+  font-size: 2rem;
+  padding: 20px 48px;
+  border-width: 5px;
+}
+
+/* ========================================
+   INPUTS (sunken 98 style)
+   ======================================== */
+.input-98 {
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+  font-size: 1.2rem;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 3px inset #c0c0c0;
+  color: #000000;
+}
+
+.input-98:focus {
+  outline: 2px solid #0000ff;
+  outline-offset: 1px;
+}
+
+.input-98::placeholder {
+  color: #808080;
+}
+
+/* ========================================
+   RAINBOW HR
+   ======================================== */
+.hr-rainbow {
+  height: 6px;
+  border: none;
+  background: linear-gradient(90deg,
+    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0088,
+    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0088
+  );
+  background-size: 200% 100%;
+  animation: rainbow-scroll 3s linear infinite;
+}
+
+@keyframes rainbow-scroll {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+/* ========================================
+   MARQUEE TEXT (CSS-only)
+   ======================================== */
+.marquee-text {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee-text span {
+  display: inline-block;
+  animation: marquee-scroll 12s linear infinite;
+}
+
+@keyframes marquee-scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ========================================
+   BLINK (90s classic)
+   ======================================== */
+.blink {
+  animation: blink-anim 1s step-end infinite;
+}
+
+@keyframes blink-anim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ========================================
+   TITLE STYLES
+   ======================================== */
+.title-90s {
+  font-family: Impact, 'Arial Black', sans-serif;
+  -webkit-text-stroke: 2px #000;
+  paint-order: stroke fill;
+}
+
+.title-shadow {
+  text-shadow: 3px 3px 0 #000000;
+}
+
+/* ========================================
+   CHAOS BAR
+   ======================================== */
+.chaos-bar-segment {
+  width: 32px;
+  height: 32px;
+  border: 2px outset #c0c0c0;
+}
+
+/* ========================================
+   GUESTBOOK / COUNTER VIBES
+   ======================================== */
+.visitor-counter {
+  font-family: 'Courier New', monospace;
+  background: #000000;
+  color: #00ff00;
+  border: 2px inset #808080;
+  padding: 4px 12px;
+  display: inline-block;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+}
+
+/* ========================================
+   UNDER CONSTRUCTION
+   ======================================== */
+.construction-stripe {
+  height: 12px;
+  background: repeating-linear-gradient(
+    45deg,
+    #ffcc00,
+    #ffcc00 10px,
+    #000000 10px,
+    #000000 20px
+  );
+}
+
+/* ========================================
+   TABLE STYLES (90s web tables)
+   ======================================== */
+.table-90s {
+  border: 3px outset #c0c0c0;
+  border-collapse: separate;
+  border-spacing: 2px;
+  background: #c0c0c0;
+}
+
+.table-90s th {
+  background: #000080;
+  color: #ffffff;
+  border: 2px outset #4040c0;
+  padding: 6px 12px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.table-90s td {
+  background: #ffffff;
+  color: #000000;
+  border: 2px inset #c0c0c0;
+  padding: 6px 12px;
+}
+
+/* ========================================
+   UTILITY
+   ======================================== */
+.font-impact {
+  font-family: Impact, 'Arial Black', sans-serif;
+}
+
+.font-comic {
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+}
+
+.font-courier {
+  font-family: 'Courier New', Courier, monospace;
 }

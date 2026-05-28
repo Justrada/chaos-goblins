@@ -16,76 +16,80 @@ export default function Lobby({ state, playerId, isGM, hasJoined, onJoin, onStar
   const [name, setName] = useState("");
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-starfield flex flex-col items-center justify-center p-6">
+      <div className="max-w-xl w-full space-y-6">
         {/* Title */}
         <div className="text-center">
-          <h1 className="text-5xl font-black text-green-400 tracking-tight">
-            CHAOS GOBLINS
-          </h1>
-          <p className="text-gray-400 mt-2 text-sm italic">
-            A Rules-Light RPG for Creatures of Chaos
+          <h1 className="title-90s title-shadow text-6xl text-[#00ff00]">CHAOS GOBLINS</h1>
+          <p className="text-[#ffff00] mt-2 text-xl title-shadow">
+            ~~* A Rules-Light RPG for Creatures of Chaos *~~
           </p>
         </div>
 
+        <hr className="hr-rainbow" />
+
         {/* Room Code */}
         <div className="text-center">
-          <p className="text-gray-500 text-xs uppercase tracking-widest">Room Code</p>
-          <p className="text-4xl font-mono font-bold text-yellow-300 tracking-[0.3em]">
+          <p className="text-[#00ffff] text-lg">ROOM CODE:</p>
+          <p className="title-90s title-shadow text-6xl text-[#ffff00] tracking-[0.4em]">
             {state.roomCode}
           </p>
         </div>
 
+        <hr className="hr-rainbow" />
+
         {/* Join Form or Player List */}
         {!hasJoined ? (
-          <div className="space-y-4">
+          <div className="panel-raised space-y-4">
+            <p className="text-[#000080] text-lg font-bold text-center">
+              &#9733; Enter Your Name to Join! &#9733;
+            </p>
             <input
               type="text"
-              placeholder="Enter your name..."
+              placeholder="Your name here..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && name.trim()) onJoin(name.trim());
               }}
               maxLength={20}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-400 text-center text-lg"
+              className="input-98 w-full text-center text-xl"
             />
             <button
               onClick={() => name.trim() && onJoin(name.trim())}
               disabled={!name.trim()}
-              className="w-full py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
+              className="btn-98 btn-98-green btn-98-big w-full"
             >
-              {state.players.length === 0 ? "Create Room (as GM)" : "Join Game"}
+              {state.players.length === 0 ? "&#9758; Create Room (as GM)" : "&#9758; Join Game!"}
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Player List */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-              <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">
-                Players ({state.players.length})
+            <div className="panel-raised">
+              <p className="text-[#000080] text-xl font-bold text-center mb-3">
+                &#9733; Players Connected ({state.players.length}) &#9733;
               </p>
-              <div className="space-y-2">
+              <div className="panel-sunken space-y-2 p-3">
                 {state.players.map((p) => (
                   <div
                     key={p.id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
-                      p.id === playerId ? "bg-gray-800 border border-green-800" : "bg-gray-800/50"
-                    }`}
+                    className={`flex items-center gap-3 px-3 py-2 ${
+                      p.id === playerId ? "bg-[#ccffcc]" : "bg-[#ffffff]"
+                    } border-2 ${p.id === playerId ? "border-[#00cc00]" : "border-[#c0c0c0]"}`}
+                    style={{ borderStyle: "inset" }}
                   >
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        p.isGM ? "bg-yellow-400" : "bg-green-400"
-                      }`}
-                    />
-                    <span className="font-medium">{p.name}</span>
+                    <span className={`text-2xl ${p.isGM ? "text-[#cc0000]" : "text-[#008000]"}`}>
+                      {p.isGM ? "&#9733;" : "&#9679;"}
+                    </span>
+                    <span className="text-lg font-bold text-[#000000]">{p.name}</span>
                     {p.isGM && (
-                      <span className="text-xs bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full ml-auto">
+                      <span className="text-sm bg-[#ff0000] text-[#ffffff] px-2 py-0.5 font-bold ml-auto border-2 outset">
                         GM
                       </span>
                     )}
                     {p.id === playerId && !p.isGM && (
-                      <span className="text-xs text-gray-500 ml-auto">you</span>
+                      <span className="text-sm text-[#808080] ml-auto italic">(you)</span>
                     )}
                   </div>
                 ))}
@@ -97,19 +101,21 @@ export default function Lobby({ state, playerId, isGM, hasJoined, onJoin, onStar
               <button
                 onClick={onStart}
                 disabled={state.players.filter((p) => !p.isGM).length < 1}
-                className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-700 disabled:text-gray-500 text-black font-bold text-lg rounded-lg transition-colors"
+                className="btn-98 btn-98-yellow btn-98-xl w-full"
               >
-                Start Game
+                &#9758; Start Game! &#9756;
               </button>
             )}
 
             {!isGM && (
-              <p className="text-center text-gray-500 text-sm">
+              <p className="text-center text-[#00ffff] text-xl blink">
                 Waiting for the GM to start the game...
               </p>
             )}
           </div>
         )}
+
+        <hr className="hr-rainbow" />
       </div>
     </div>
   );

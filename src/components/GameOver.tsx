@@ -10,7 +10,6 @@ export default function GameOver({ state }: { state: GameState }) {
 
   useEffect(() => {
     if (allMilestonesComplete) {
-      // Victory confetti burst
       const duration = 3000;
       const end = Date.now() + duration;
       const frame = () => {
@@ -19,14 +18,14 @@ export default function GameOver({ state }: { state: GameState }) {
           angle: 60,
           spread: 55,
           origin: { x: 0 },
-          colors: ["#7CFC00", "#FFD700", "#FF6347"],
+          colors: ["#00ff00", "#ffff00", "#ff0000"],
         });
         confetti({
           particleCount: 3,
           angle: 120,
           spread: 55,
           origin: { x: 1 },
-          colors: ["#7CFC00", "#FFD700", "#FF6347"],
+          colors: ["#0000ff", "#ff00ff", "#00ffff"],
         });
         if (Date.now() < end) requestAnimationFrame(frame);
       };
@@ -35,47 +34,60 @@ export default function GameOver({ state }: { state: GameState }) {
   }, [allMilestonesComplete]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-starfield flex flex-col items-center justify-center p-6">
       <div className="max-w-lg w-full text-center space-y-6">
         {allMilestonesComplete ? (
           <>
-            <h1 className="text-5xl font-black text-green-400">MISSION COMPLETE!</h1>
-            <p className="text-xl text-gray-300">
-              The goblins did it! Against all odds, the kingdom is saved.
+            <h1 className="title-90s title-shadow text-7xl text-[#00ff00]">MISSION COMPLETE!</h1>
+            <p className="text-2xl text-[#ffff00] font-bold title-shadow">
+              &#9733; The goblins did it! Against all odds, the kingdom is saved. &#9733;
             </p>
-            <p className="text-gray-500 text-sm">
+            <p className="text-xl text-[#00ffff] italic font-bold">
               The Wizard barely looks up from his book. &quot;Good. Now get out.&quot;
             </p>
           </>
         ) : (
           <>
-            <h1 className="text-5xl font-black text-red-400">MISSION FAILED</h1>
-            <p className="text-xl text-gray-300">
+            <h1 className="title-90s title-shadow text-7xl text-[#ff0000] blink">MISSION FAILED</h1>
+            <p className="text-2xl text-[#ff6600] font-bold title-shadow">
               The goblins have been exposed, assimilated, or worse.
             </p>
           </>
         )}
 
+        <hr className="hr-rainbow" />
+
         {/* Final Stats */}
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 space-y-2">
-          <p className="text-xs uppercase tracking-widest text-gray-500">Final Report</p>
-          {nonGMPlayers.map((p) => (
-            <div key={p.id} className="flex items-center justify-between text-sm">
-              <span>{p.name} ({p.form?.split("(")[0]})</span>
-              <span className={
-                p.isFullGoblin ? "text-red-400" :
-                p.isAssimilated ? "text-blue-400" :
-                "text-green-400"
-              }>
-                Chaos {p.chaos}
-                {p.isFullGoblin && " — FULL GOBLIN"}
-                {p.isAssimilated && " — ASSIMILATED"}
-              </span>
-            </div>
-          ))}
+        <div className="panel-raised p-5">
+          <p className="text-xl text-[#cc0000] font-bold uppercase text-center mb-3">
+            &#9733; Final Report &#9733;
+          </p>
+          <table className="table-90s w-full">
+            <thead>
+              <tr><th>Player</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {nonGMPlayers.map((p) => (
+                <tr key={p.id}>
+                  <td className="font-bold">{p.name} ({p.form?.split("(")[0]})</td>
+                  <td className={`font-bold ${
+                    p.isFullGoblin ? "!text-[#ff0000] !bg-[#ffcccc]" :
+                    p.isAssimilated ? "!text-[#0000cc] !bg-[#ccccff]" :
+                    "!text-[#008000] !bg-[#ccffcc]"
+                  }`}>
+                    Chaos {p.chaos}
+                    {p.isFullGoblin && " — FULL GOBLIN"}
+                    {p.isAssimilated && " — ASSIMILATED"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        <p className="text-gray-600 text-xs">Refresh to play again!</p>
+        <hr className="hr-rainbow" />
+
+        <p className="text-xl text-[#00ffff] font-bold">Refresh to play again!</p>
       </div>
     </div>
   );

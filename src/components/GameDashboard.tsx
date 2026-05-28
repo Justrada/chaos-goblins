@@ -24,65 +24,66 @@ export default function GameDashboard({
   const nonGMPlayers = state.players.filter((p) => !p.isGM);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-4">
-      <div className="max-w-4xl mx-auto space-y-4">
+    <div className="min-h-screen bg-starfield p-4">
+      <div className="max-w-5xl mx-auto space-y-4">
         {/* Mission Banner */}
-        <div className="bg-gray-900 rounded-lg border border-yellow-800 p-4 text-center">
-          <p className="text-xs uppercase tracking-widest text-yellow-500">Mission</p>
-          <p className="text-xl font-bold text-yellow-300">
+        <div className="panel-yellow p-4 text-center">
+          <p className="text-[#cc0000] text-lg font-bold uppercase tracking-wider">&#9733; MISSION &#9733;</p>
+          <p className="title-90s text-4xl text-[#000080] mt-1" style={{ textShadow: "2px 2px 0 #c0c0c0" }}>
             {state.missionGoal} {state.missionTarget}
           </p>
           {state.nemesis && (
-            <p className="text-sm text-red-400 mt-1">
-              Nemesis: <span className="font-bold">{state.nemesis.name}</span>{" "}
-              — {state.nemesis.description}
+            <p className="text-lg text-[#cc0000] mt-2 font-bold">
+              NEMESIS: {state.nemesis.name} — {state.nemesis.description}
               {state.nemesis.active && state.nemesis.resolve > 0 && (
-                <span className="text-red-300 ml-2">(ACTIVE — Disadvantage on Civilized!)</span>
+                <span className="text-[#ff0000] ml-2 blink">(ACTIVE — Disadvantage on Civilized!)</span>
               )}
             </p>
           )}
         </div>
 
         {/* Scene & Status Bar */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">Scene {state.scene}</span>
+        <div className="flex items-center justify-between text-lg">
+          <span className="text-[#ff00ff] font-bold title-shadow">&#9670; Scene {state.scene}</span>
           {state.hotlineUsed && (
-            <span className="text-gray-600 line-through">Wizard&apos;s Hotline</span>
+            <span className="text-[#808080] line-through">Wizard&apos;s Hotline</span>
           )}
           {!state.hotlineUsed && (
-            <span className="text-blue-400 text-xs">Wizard&apos;s Hotline available</span>
+            <span className="text-[#00ffff] font-bold title-shadow">&#9742; Wizard&apos;s Hotline available</span>
           )}
         </div>
 
+        <hr className="hr-rainbow" />
+
         {/* Central Meters Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Suspicion Meter */}
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 text-center">
-            <p className="text-xs uppercase tracking-widest text-gray-500">Suspicion</p>
-            <p className={`text-4xl font-black font-mono ${
-              state.suspicion >= 5 ? "text-red-400 animate-pulse" :
-              state.suspicion >= 3 ? "text-orange-400" :
-              "text-green-400"
-            }`}>
+          <div className="panel-raised text-center">
+            <p className="text-[#cc0000] text-lg font-bold uppercase">&#9888; SUSPICION</p>
+            <p className={`font-impact text-7xl mt-1 ${
+              state.suspicion >= 5 ? "text-[#ff0000] blink" :
+              state.suspicion >= 3 ? "text-[#ff6600]" :
+              "text-[#008000]"
+            }`} style={{ textShadow: "3px 3px 0 #808080" }}>
               {state.suspicion}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-[#000080] text-lg mt-1 font-bold">
               {SUSPICION_DESCRIPTIONS[state.suspicion]}
             </p>
           </div>
 
           {/* Milestones */}
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 text-center">
-            <p className="text-xs uppercase tracking-widest text-gray-500">Milestones</p>
-            <div className="flex flex-col gap-1 mt-2">
+          <div className="panel-raised text-center">
+            <p className="text-[#008000] text-lg font-bold uppercase">&#9745; MILESTONES</p>
+            <div className="flex flex-col gap-2 mt-3">
               {state.milestones.map((m) => (
                 <div
                   key={m.id}
-                  className={`flex items-center gap-2 text-xs ${
-                    m.completed ? "text-green-400" : "text-gray-600"
+                  className={`flex items-center gap-3 text-lg font-bold ${
+                    m.completed ? "text-[#008000]" : "text-[#808080]"
                   }`}
                 >
-                  <span>{m.completed ? "■" : "□"}</span>
+                  <span className="text-2xl">{m.completed ? "☑" : "☐"}</span>
                   <span>{m.label}</span>
                 </div>
               ))}
@@ -90,19 +91,19 @@ export default function GameDashboard({
           </div>
 
           {/* Nemesis / Specialists */}
-          <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 text-center">
-            <p className="text-xs uppercase tracking-widest text-gray-500">Threats</p>
+          <div className="panel-raised text-center">
+            <p className="text-[#cc0000] text-lg font-bold uppercase">&#9760; THREATS</p>
             {state.nemesis && (
-              <div className="mt-1">
-                <p className={`text-sm font-bold ${state.nemesis.active ? "text-red-400" : "text-gray-600"}`}>
+              <div className="mt-2">
+                <p className={`text-2xl font-bold ${state.nemesis.active ? "text-[#ff0000]" : "text-[#808080]"}`}>
                   {state.nemesis.name}
                 </p>
-                <div className="flex justify-center gap-1 mt-1">
+                <div className="flex justify-center gap-2 mt-2">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <span
                       key={i}
-                      className={`text-lg ${
-                        i < state.nemesis!.resolve ? "text-red-400" : "text-gray-700"
+                      className={`text-3xl ${
+                        i < state.nemesis!.resolve ? "text-[#ff0000]" : "text-[#c0c0c0]"
                       }`}
                     >
                       ♥
@@ -110,17 +111,17 @@ export default function GameDashboard({
                   ))}
                 </div>
                 {!state.nemesis.active && state.nemesis.resolve > 0 && (
-                  <p className="text-xs text-gray-500">Fled (returns next scene)</p>
+                  <p className="text-lg text-[#800080] font-bold">Fled (returns next scene)</p>
                 )}
                 {state.nemesis.resolve <= 0 && (
-                  <p className="text-xs text-green-400">Defeated!</p>
+                  <p className="text-lg text-[#008000] font-bold">&#9733; Defeated! &#9733;</p>
                 )}
               </div>
             )}
             {state.specialists.length > 0 && (
-              <div className="mt-2">
+              <div className="mt-3">
                 {state.specialists.map((s) => (
-                  <p key={s.id} className="text-xs text-red-300">
+                  <p key={s.id} className="text-lg text-[#cc0000] font-bold">
                     Specialist #{s.id} {s.active ? "(ACTIVE)" : "(removed)"}
                   </p>
                 ))}
@@ -134,33 +135,33 @@ export default function GameDashboard({
 
         {/* Player Action Area (for spotlighted player) */}
         {!isGM && isSpotlighted && me && !me.isFullGoblin && !me.isAssimilated && (
-          <div className="bg-gray-900 rounded-lg border border-yellow-400 p-4 text-center space-y-3">
-            <p className="text-yellow-300 font-bold text-sm uppercase tracking-widest">
-              Your Turn!
+          <div className="panel-yellow p-5 text-center space-y-4">
+            <p className="title-90s text-3xl text-[#cc0000] blink">
+              &#9733; YOUR TURN! &#9733;
             </p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <button
                 onClick={() => send({ type: "player-roll", rollType: "civilized" })}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold transition-colors"
+                className="btn-98 btn-98-blue btn-98-big"
               >
                 Roll Civilized
               </button>
               <button
                 onClick={() => send({ type: "player-roll", rollType: "goblin" })}
-                className="px-5 py-2.5 bg-green-700 hover:bg-green-600 rounded-lg font-bold transition-colors"
+                className="btn-98 btn-98-green btn-98-big"
               >
                 Roll Goblin
               </button>
             </div>
             {me.pocketItems.length > 0 && (
-              <div className="border-t border-gray-800 pt-3 mt-3">
-                <p className="text-xs text-gray-500 mb-2">Use an item (Comfort: Chaos -1, Suspicion +1):</p>
-                <div className="flex flex-wrap gap-2 justify-center">
+              <div className="border-t-4 border-[#808080] pt-4 mt-4" style={{ borderStyle: "inset" }}>
+                <p className="text-lg text-[#800080] font-bold">Use an item (Comfort: Chaos -1, Suspicion +1):</p>
+                <div className="flex flex-wrap gap-3 justify-center mt-2">
                   {me.pocketItems.map((item, i) => (
                     <button
                       key={i}
                       onClick={() => send({ type: "player-use-item", itemIndex: i })}
-                      className="px-3 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs transition-colors"
+                      className="btn-98 btn-98-purple"
                     >
                       {item}
                     </button>
@@ -173,15 +174,15 @@ export default function GameDashboard({
 
         {/* Full Goblin / Assimilated message */}
         {!isGM && me?.isFullGoblin && (
-          <div className="bg-red-900/30 rounded-lg border border-red-800 p-4 text-center">
-            <p className="text-red-400 font-black text-xl">FULL GOBLIN MODE!</p>
-            <p className="text-red-300 text-sm mt-1">
+          <div className="panel-red p-5 text-center">
+            <p className="title-90s text-4xl text-[#ffff00] blink">&#9760; FULL GOBLIN MODE! &#9760;</p>
+            <p className="text-xl text-[#ffffff] mt-2 font-bold">
               You&apos;re exposed! You can only do Goblin actions. Suspicion auto-increases each turn.
             </p>
             {isSpotlighted && (
               <button
                 onClick={() => send({ type: "player-roll", rollType: "goblin" })}
-                className="mt-3 px-5 py-2.5 bg-green-700 hover:bg-green-600 rounded-lg font-bold transition-colors"
+                className="btn-98 btn-98-green btn-98-big mt-4"
               >
                 Roll Goblin
               </button>
@@ -190,15 +191,15 @@ export default function GameDashboard({
         )}
 
         {!isGM && me?.isAssimilated && (
-          <div className="bg-blue-900/30 rounded-lg border border-blue-800 p-4 text-center">
-            <p className="text-blue-400 font-black text-xl">TOTAL ASSIMILATION</p>
-            <p className="text-blue-300 text-sm mt-1">
+          <div className="panel-blue p-5 text-center">
+            <p className="title-90s text-4xl text-[#00ffff]">TOTAL ASSIMILATION</p>
+            <p className="text-xl text-[#ffffff] mt-2 font-bold">
               You&apos;ve forgotten you were a goblin. You can only do Civilized actions. Suspicion auto-increases each turn.
             </p>
             {isSpotlighted && (
               <button
                 onClick={() => send({ type: "player-roll", rollType: "civilized" })}
-                className="mt-3 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold transition-colors"
+                className="btn-98 btn-98-cyan btn-98-big mt-4"
               >
                 Roll Civilized
               </button>
@@ -208,13 +209,15 @@ export default function GameDashboard({
 
         {/* Not spotlighted message */}
         {!isGM && !isSpotlighted && (
-          <div className="text-center text-gray-600 text-sm py-4">
+          <div className="text-center text-[#00ffff] text-xl py-4 blink font-bold title-shadow">
             Waiting for {state.players.find((p) => p.id === state.spotlightPlayerId)?.name || "..."}&apos;s turn...
           </div>
         )}
 
+        <hr className="hr-rainbow" />
+
         {/* Player Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {nonGMPlayers.map((p) => (
             <PlayerCard
               key={p.id}
@@ -227,7 +230,10 @@ export default function GameDashboard({
 
         {/* GM Panel */}
         {isGM && (
-          <GMPanel state={state} send={send} />
+          <>
+            <hr className="hr-rainbow" />
+            <GMPanel state={state} send={send} />
+          </>
         )}
       </div>
     </div>
@@ -244,58 +250,66 @@ function PlayerCard({
   isMe: boolean;
 }) {
   const chaosColor =
-    player.chaos >= 5 ? "text-red-400" :
-    player.chaos >= 4 ? "text-orange-400" :
-    player.chaos >= 2 ? "text-yellow-300" :
-    "text-blue-400";
+    player.chaos >= 5 ? "text-[#ff0000]" :
+    player.chaos >= 4 ? "text-[#ff6600]" :
+    player.chaos >= 2 ? "text-[#cccc00]" :
+    "text-[#0000ff]";
+
+  const panelClass = player.isFullGoblin
+    ? "panel-red"
+    : player.isAssimilated
+      ? "panel-blue"
+      : isSpotlighted
+        ? "panel-yellow"
+        : "panel-raised";
 
   return (
-    <div
-      className={`bg-gray-900 rounded-lg border p-3 ${
-        isSpotlighted
-          ? "border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
-          : "border-gray-800"
-      } ${player.isFullGoblin ? "bg-red-950/30" : ""} ${player.isAssimilated ? "bg-blue-950/30" : ""}`}
-    >
+    <div className={`${panelClass} p-3`}>
       <div className="flex items-center justify-between">
-        <p className="font-bold text-sm truncate">
-          {player.name} {isMe && <span className="text-gray-600">(you)</span>}
+        <p className={`text-xl font-bold truncate ${player.isFullGoblin || player.isAssimilated ? "text-[#ffffff]" : "text-[#000000]"}`}>
+          {isSpotlighted && "&#9733; "}{player.name} {isMe && <span className="text-[#808080]">(you)</span>}
         </p>
-        {isSpotlighted && <span className="text-yellow-400 text-xs">★</span>}
       </div>
-      <p className="text-xs text-green-400 truncate">{player.form}</p>
+      <p className={`text-lg font-bold truncate ${player.isFullGoblin || player.isAssimilated ? "text-[#00ff00]" : "text-[#008000]"}`}>
+        {player.form}
+      </p>
 
       {/* Chaos */}
       <div className="flex items-center gap-2 mt-2">
-        <span className="text-xs text-gray-500">CHAOS</span>
-        <div className="flex gap-0.5">
+        <span className={`text-lg font-bold ${player.isFullGoblin || player.isAssimilated ? "text-[#ffffff]" : "text-[#800080]"}`}>
+          CHAOS
+        </span>
+        <div className="flex gap-1">
           {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={i}
-              className={`w-3 h-3 rounded-sm ${
-                i <= player.chaos
-                  ? i >= 5 ? "bg-red-500" : i >= 3 ? "bg-orange-500" : "bg-blue-500"
-                  : "bg-gray-800"
-              } ${i === player.chaos ? "ring-1 ring-white" : ""}`}
+              className="chaos-bar-segment"
+              style={{
+                background: i <= player.chaos
+                  ? i >= 5 ? "#ff0000" : i >= 3 ? "#ff6600" : "#0000ff"
+                  : "#c0c0c0",
+                borderStyle: i <= player.chaos ? "outset" : "inset",
+              }}
             />
           ))}
         </div>
-        <span className={`text-sm font-bold font-mono ${chaosColor}`}>
+        <span className={`text-2xl font-impact ${chaosColor}`}>
           {player.chaos}
         </span>
       </div>
 
       {/* Status */}
       {player.isFullGoblin && (
-        <p className="text-xs text-red-400 font-bold mt-1">FULL GOBLIN!</p>
+        <p className="text-lg text-[#ffff00] font-bold mt-1 blink">&#9760; FULL GOBLIN!</p>
       )}
       {player.isAssimilated && (
-        <p className="text-xs text-blue-400 font-bold mt-1">ASSIMILATED</p>
+        <p className="text-lg text-[#00ffff] font-bold mt-1">ASSIMILATED</p>
       )}
 
       {/* Obsession */}
       {player.obsession && (
-        <p className="text-xs text-orange-400 mt-1 truncate" title={player.obsession}>
+        <p className={`text-lg font-bold mt-1 truncate ${player.isFullGoblin || player.isAssimilated ? "text-[#ff8800]" : "text-[#ff6600]"}`}
+          title={player.obsession}>
           {player.obsession.split("—")[0]}
         </p>
       )}
@@ -304,8 +318,9 @@ function PlayerCard({
       {player.pocketItems.length > 0 && (
         <div className="mt-1">
           {player.pocketItems.map((item, i) => (
-            <p key={i} className="text-xs text-gray-500 truncate" title={item}>
-              ◆ {item}
+            <p key={i} className={`text-lg truncate ${player.isFullGoblin || player.isAssimilated ? "text-[#cc99ff]" : "text-[#800080]"}`}
+              title={item}>
+              &#9670; {item}
             </p>
           ))}
         </div>
@@ -325,23 +340,25 @@ function GMPanel({
   const randomHazard = WIZARD_HAZARDS[Math.floor(Math.random() * WIZARD_HAZARDS.length)];
 
   return (
-    <div className="bg-yellow-950/30 rounded-lg border border-yellow-800 p-4 space-y-4">
-      <p className="text-yellow-400 font-bold text-sm uppercase tracking-widest text-center">
-        GM Controls
+    <div className="panel-raised p-5 space-y-4">
+      <div className="construction-stripe" />
+      <p className="title-90s text-3xl text-[#cc0000] text-center" style={{ textShadow: "2px 2px 0 #808080" }}>
+        &#9733; GM CONTROLS &#9733;
       </p>
+      <div className="construction-stripe" />
 
       {/* Spotlight */}
       <div>
-        <p className="text-xs text-gray-500 mb-1">Spotlight (whose turn):</p>
+        <p className="text-lg text-[#000080] font-bold mb-2">&#9658; Spotlight (whose turn):</p>
         <div className="flex flex-wrap gap-2">
           {nonGMPlayers.map((p) => (
             <button
               key={p.id}
               onClick={() => send({ type: "gm-set-spotlight", playerId: p.id })}
-              className={`px-3 py-1 rounded text-sm font-bold transition-colors ${
+              className={`btn-98 ${
                 state.spotlightPlayerId === p.id
-                  ? "bg-yellow-500 text-black"
-                  : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                  ? "btn-98-yellow"
+                  : ""
               }`}
             >
               {p.name}
@@ -352,21 +369,21 @@ function GMPanel({
 
       {/* Chaos Overrides */}
       <div>
-        <p className="text-xs text-gray-500 mb-1">Chaos Override:</p>
-        <div className="space-y-1">
+        <p className="text-lg text-[#000080] font-bold mb-2">&#9658; Chaos Override:</p>
+        <div className="panel-sunken p-3 space-y-2">
           {nonGMPlayers.map((p) => (
-            <div key={p.id} className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 w-20 truncate">{p.name}</span>
+            <div key={p.id} className="flex items-center gap-3">
+              <span className="text-lg font-bold text-[#000000] w-28 truncate">{p.name}</span>
               <button
                 onClick={() => send({ type: "gm-set-chaos", playerId: p.id, value: p.chaos - 1 })}
-                className="w-6 h-6 bg-gray-800 hover:bg-gray-700 rounded text-xs"
+                className="btn-98 !px-3 !py-1"
               >
                 -
               </button>
-              <span className="text-sm font-mono font-bold w-4 text-center">{p.chaos}</span>
+              <span className="text-2xl font-impact text-[#000080] w-8 text-center">{p.chaos}</span>
               <button
                 onClick={() => send({ type: "gm-set-chaos", playerId: p.id, value: p.chaos + 1 })}
-                className="w-6 h-6 bg-gray-800 hover:bg-gray-700 rounded text-xs"
+                className="btn-98 !px-3 !py-1"
               >
                 +
               </button>
@@ -376,18 +393,18 @@ function GMPanel({
       </div>
 
       {/* Suspicion */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-500">Suspicion:</span>
+      <div className="flex items-center gap-4">
+        <span className="text-lg text-[#000080] font-bold">&#9658; Suspicion:</span>
         <button
           onClick={() => send({ type: "gm-set-suspicion", value: state.suspicion - 1 })}
-          className="w-6 h-6 bg-gray-800 hover:bg-gray-700 rounded text-xs"
+          className="btn-98 !px-3 !py-1"
         >
           -
         </button>
-        <span className="text-sm font-mono font-bold">{state.suspicion}</span>
+        <span className="text-2xl font-impact text-[#cc0000]">{state.suspicion}</span>
         <button
           onClick={() => send({ type: "gm-set-suspicion", value: state.suspicion + 1 })}
-          className="w-6 h-6 bg-gray-800 hover:bg-gray-700 rounded text-xs"
+          className="btn-98 !px-3 !py-1"
         >
           +
         </button>
@@ -395,19 +412,15 @@ function GMPanel({
 
       {/* Milestones */}
       <div>
-        <p className="text-xs text-gray-500 mb-1">Milestones:</p>
-        <div className="flex gap-2">
+        <p className="text-lg text-[#000080] font-bold mb-2">&#9658; Milestones:</p>
+        <div className="flex flex-wrap gap-2">
           {state.milestones.map((m) => (
             <button
               key={m.id}
               onClick={() => send({ type: "gm-toggle-milestone", milestoneId: m.id })}
-              className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
-                m.completed
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-800 hover:bg-gray-700 text-gray-400"
-              }`}
+              className={`btn-98 ${m.completed ? "btn-98-green" : ""}`}
             >
-              {m.completed ? "■" : "□"} {m.label}
+              {m.completed ? "☑" : "☐"} {m.label}
             </button>
           ))}
         </div>
@@ -415,21 +428,17 @@ function GMPanel({
 
       {/* Nemesis Controls */}
       {state.nemesis && state.nemesis.resolve > 0 && (
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">Nemesis:</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-lg text-[#000080] font-bold">&#9658; Nemesis:</span>
           <button
             onClick={() => send({ type: "gm-damage-nemesis" })}
-            className="px-3 py-1 bg-red-800 hover:bg-red-700 rounded text-xs font-bold transition-colors"
+            className="btn-98 btn-98-red"
           >
             -1 Resolve ({state.nemesis.resolve})
           </button>
           <button
             onClick={() => send({ type: "gm-toggle-nemesis-active" })}
-            className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
-              state.nemesis.active
-                ? "bg-red-600 text-white"
-                : "bg-gray-800 text-gray-400"
-            }`}
+            className={`btn-98 ${state.nemesis.active ? "btn-98-red" : ""}`}
           >
             {state.nemesis.active ? "Active" : "Fled"}
           </button>
@@ -437,29 +446,31 @@ function GMPanel({
       )}
 
       {/* Scene / Hotline / Advance */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         <button
           onClick={() => send({ type: "gm-next-scene" })}
-          className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs font-bold transition-colors"
+          className="btn-98 btn-98-purple"
         >
-          Next Scene →
+          Next Scene &#9654;
         </button>
 
         {!state.hotlineUsed && (
           <button
             onClick={() => send({ type: "gm-use-hotline" })}
-            className="px-3 py-1.5 bg-blue-800 hover:bg-blue-700 rounded text-xs font-bold transition-colors"
+            className="btn-98 btn-98-cyan"
           >
-            Use Wizard&apos;s Hotline
+            &#9742; Use Wizard&apos;s Hotline
           </button>
         )}
 
         {state.hotlineUsed && (
-          <div className="text-xs text-gray-500 px-3 py-1.5">
-            Hazard suggestion: <span className="text-blue-300 italic">{randomHazard}</span>
+          <div className="text-lg text-[#800080] font-bold px-3 py-2">
+            Hazard suggestion: <span className="text-[#0000cc] italic">{randomHazard}</span>
           </div>
         )}
       </div>
+
+      <div className="construction-stripe" />
     </div>
   );
 }
