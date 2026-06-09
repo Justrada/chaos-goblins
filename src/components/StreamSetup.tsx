@@ -22,10 +22,10 @@ export default function StreamSetup({ roomCode }: { roomCode: string }) {
 
   const overlayUrl = origin ? `${origin}/overlay/${roomCode}` : `…/overlay/${roomCode}`;
 
-  const videoSources: { label: string; url: string }[] = [
-    { label: "GM camera", url: obsViewUrl(0, true) },
+  const rawFeeds: { label: string; url: string }[] = [
+    { label: "GM (video+audio)", url: obsViewUrl(0, true) },
     ...Array.from({ length: 7 }, (_, i) => ({
-      label: `Player seat ${i + 1}`,
+      label: `Seat ${i + 1} (video+audio)`,
       url: obsViewUrl(i + 1, false),
     })),
   ];
@@ -51,21 +51,23 @@ export default function StreamSetup({ roomCode }: { roomCode: string }) {
 
       {show && (
         <div className="mt-3 space-y-3">
-          <p className="text-sm text-[#000000] font-bold">
-            Add each of these as a <b>Browser Source</b> in OBS. The video sources are clean
-            feeds; lay the overlay on top. For audio: set each video source&apos;s Audio
-            Monitoring to <b>Monitor Off</b> so your desktop doesn&apos;t echo.
-          </p>
-
           <div>
-            <p className="text-base text-[#cc0000] font-bold uppercase mb-1">&#9733; Game Overlay (graphics) &#9733;</p>
-            <Row label="Overlay" url={overlayUrl} />
+            <p className="text-base text-[#cc0000] font-bold uppercase mb-1">&#9733; Combined Scene (use this in OBS) &#9733;</p>
+            <p className="text-sm text-[#000000] font-bold mb-1">
+              One Browser Source = the whole show: video tiles, chaos borders, animations,
+              mic glow, and the game HUD, all in one.
+            </p>
+            <Row label="Combined Scene" url={overlayUrl} />
           </div>
 
           <div>
-            <p className="text-base text-[#cc0000] font-bold uppercase mb-1">&#9733; Video Feeds (one per seat) &#9733;</p>
+            <p className="text-base text-[#cc0000] font-bold uppercase mb-1">&#9733; Per-Guest Raw Feeds (video + audio) &#9733;</p>
+            <p className="text-sm text-[#000000] font-bold mb-1">
+              Clean individual feeds (with audio) for recording each guest on a separate
+              channel. Paste into your own OBS/recorder workflow.
+            </p>
             <div className="space-y-2">
-              {videoSources.map((s) => (
+              {rawFeeds.map((s) => (
                 <Row key={s.label} label={s.label} url={s.url} />
               ))}
             </div>

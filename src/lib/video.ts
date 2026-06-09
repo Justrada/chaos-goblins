@@ -29,7 +29,7 @@ export function pushUrl(seat: number, isGM: boolean, name: string): string {
 }
 
 // URL for an OBS browser source that pulls ONE participant's feed,
-// clean (no UI) so it drops straight into your overlay.
+// clean (no UI) so it drops straight into your overlay or a separate channel.
 export function obsViewUrl(seat: number, isGM: boolean): string {
   const id = streamIdFor(seat, isGM);
   const params = new URLSearchParams({
@@ -37,6 +37,20 @@ export function obsViewUrl(seat: number, isGM: boolean): string {
     view: id,
     solo: "1",
     cleanoutput: "1",
+  });
+  return `${VDO_BASE}/?${params.toString()}`;
+}
+
+// URL embedded INSIDE the combined scene for a single seat's video tile.
+// cover = fill the container; cleanoutput = no VDO UI.
+export function sceneTileUrl(seat: number, isGM: boolean): string {
+  const id = streamIdFor(seat, isGM);
+  const params = new URLSearchParams({
+    room: VDO_ROOM,
+    view: id,
+    solo: "1",
+    cleanoutput: "1",
+    cover: "1",
   });
   return `${VDO_BASE}/?${params.toString()}`;
 }
