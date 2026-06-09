@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState("");
+  const [visitorCount, setVisitorCount] = useState<string | null>(null);
+
+  // Generate visitor count only on the client to avoid SSR hydration mismatch
+  useEffect(() => {
+    setVisitorCount(
+      String(Math.floor(Math.random() * 9000) + 1000).padStart(6, "0")
+    );
+  }, []);
 
   const createRoom = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -95,7 +103,7 @@ export default function Home() {
         <div className="text-[#808080] text-sm space-y-2">
           <p>Best viewed in Netscape Navigator 4.0 at 800x600</p>
           <div className="visitor-counter">
-            Visitors: {String(Math.floor(Math.random() * 9000) + 1000).padStart(6, "0")}
+            Visitors: {visitorCount ?? "------"}
           </div>
         </div>
       </div>

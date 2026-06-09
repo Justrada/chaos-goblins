@@ -62,7 +62,6 @@ export default function RoomPage() {
 
       {(state.phase === "character-creation-form" ||
         state.phase === "character-creation-description" ||
-        state.phase === "character-creation-obsession" ||
         state.phase === "character-creation-pockets") && (
         <CharacterCreation
           state={state}

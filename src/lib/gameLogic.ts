@@ -7,10 +7,14 @@ import {
   Player,
   DiceRoll,
   MilestoneId,
+  RollModifier,
+  ItemEffect,
+  CHAOS_MIN,
+  CHAOS_MAX,
+  CHAOS_START,
 } from "./types";
 import {
   FORMS,
-  OBSESSIONS,
   POCKET_ITEMS,
   NEMESES,
   MISSION_GOALS,
@@ -34,6 +38,25 @@ function generateRoomCode(): string {
   return code;
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function clampChaos(value: number): number {
+  return Math.max(CHAOS_MIN, Math.min(CHAOS_MAX, value));
+}
+
+// Recompute the Full Goblin / Full Human flags from a player's chaos value.
+function refreshExtremes(player: Player): void {
+  player.isFullGoblin = player.chaos >= CHAOS_MAX; // 8 = Full Goblin
+  player.isFullHuman = player.chaos <= CHAOS_MIN; // 0 = Full Human
+}
+
 // ------------------------------------------------------------
 // State Creation
 // ------------------------------------------------------------
@@ -43,16 +66,15 @@ export function createInitialState(roomCode?: string): GameState {
     roomCode: roomCode || generateRoomCode(),
     phase: "lobby",
     players: [],
-    spotlightPlayerId: null,
     suspicion: 1,
+    suspicionEvent: { active: false, verbs: [] },
     milestones: [
-      { id: "infiltration", label: "Infiltration", completed: false },
-      { id: "heist", label: "The Heist", completed: false },
-      { id: "escape", label: "The Escape", completed: false },
+      { id: "act1", label: "Act 1", completed: false },
+      { id: "act2", label: "Act 2", completed: false },
+      { id: "act3", label: "Act 3", completed: false },
     ],
     nemesis: null,
     nemesisIndex: null,
-    specialists: [],
     missionGoal: null,
     missionGoalIndex: null,
     missionTarget: null,
@@ -60,34 +82,55 @@ export function createInitialState(roomCode?: string): GameState {
     hotlineUsed: false,
     adjectivePool: [],
     adjectivesSubmitted: [],
+    itemPool: shuffle(POCKET_ITEMS),
     scene: 1,
     currentRoll: null,
   };
 }
 
-export function createPlayer(id: string, name: string, isGM: boolean): Player {
+export function createPlayer(
+  id: string,
+  name: string,
+  isGM: boolean,
+  seat: number
+): Player {
   return {
     id,
     name,
     isGM,
+    seat,
     form: null,
     formIndex: null,
     adjectives: [],
-    description: "",
-    obsession: null,
-    obsessionIndex: null,
+    catchphrase: "",
     pocketItems: [],
-    chaos: 4, // starts at 4 per finalized rules
+    chaos: CHAOS_START,
     isFullGoblin: false,
-    isAssimilated: false,
+    isFullHuman: false,
+    nextRollModifier: null,
   };
 }
 
+// Assign the next available seat. GM is seat 0; players get 1..7 in join order.
+export function nextSeat(state: GameState, isGM: boolean): number {
+  if (isGM) return 0;
+  const usedPlayerSeats = state.players
+    .filter((p) => !p.isGM)
+    .map((p) => p.seat);
+  for (let s = 1; s <= 7; s++) {
+    if (!usedPlayerSeats.includes(s)) return s;
+  }
+  return usedPlayerSeats.length + 1;
+}
+
 // ------------------------------------------------------------
-// Character Creation
+// Character Creation (players roll their own)
 // ------------------------------------------------------------
 
-export function rollForm(state: GameState, playerId: string): { state: GameState; roll: DiceRoll } {
+export function rollForm(
+  state: GameState,
+  playerId: string
+): { state: GameState; roll: DiceRoll } {
   const result = rollDie(6);
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("Player not found");
@@ -103,6 +146,8 @@ export function rollForm(state: GameState, playerId: string): { state: GameState
     result,
     target: null,
     outcome: null,
+    modifier: null,
+    rolls: [result],
     timestamp: Date.now(),
   };
 
@@ -111,62 +156,39 @@ export function rollForm(state: GameState, playerId: string): { state: GameState
 }
 
 export function dealAdjectives(state: GameState): GameState {
-  // Shuffle the pool
-  const pool = [...state.adjectivePool];
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-
-  // Deal 3 to each non-GM player
+  const pool = shuffle(state.adjectivePool);
   const nonGMPlayers = state.players.filter((p) => !p.isGM);
   let idx = 0;
   for (const player of nonGMPlayers) {
     player.adjectives = pool.slice(idx, idx + 3);
     idx += 3;
   }
-
   return state;
 }
 
-export function rollObsession(state: GameState, playerId: string): { state: GameState; roll: DiceRoll } {
-  const result = rollDie(6);
+// Draw one unique item from the shared pool (no repeats across players).
+export function rollPocketItem(
+  state: GameState,
+  playerId: string
+): { state: GameState; roll: DiceRoll } {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("Player not found");
+  if (player.pocketItems.length >= 3) throw new Error("Already has 3 items");
+  if (state.itemPool.length === 0) throw new Error("No items left in pool");
 
-  player.obsessionIndex = result - 1;
-  player.obsession = OBSESSIONS[result - 1];
-
-  const roll: DiceRoll = {
-    playerId,
-    playerName: player.name,
-    type: "table",
-    dieSize: 6,
-    result,
-    target: null,
-    outcome: null,
-    timestamp: Date.now(),
-  };
-
-  state.currentRoll = roll;
-  return { state, roll };
-}
-
-export function rollPocketItem(state: GameState, playerId: string): { state: GameState; roll: DiceRoll } {
-  const result = rollDie(20);
-  const player = state.players.find((p) => p.id === playerId);
-  if (!player) throw new Error("Player not found");
-
-  player.pocketItems.push(POCKET_ITEMS[result - 1]);
+  const item = state.itemPool.shift()!;
+  player.pocketItems.push(item);
 
   const roll: DiceRoll = {
     playerId,
     playerName: player.name,
     type: "table",
     dieSize: 20,
-    result,
+    result: POCKET_ITEMS.indexOf(item) + 1,
     target: null,
     outcome: null,
+    modifier: null,
+    rolls: [],
     timestamp: Date.now(),
   };
 
@@ -175,10 +197,14 @@ export function rollPocketItem(state: GameState, playerId: string): { state: Gam
 }
 
 // ------------------------------------------------------------
-// Mission Setup
+// Mission Setup (GM rolls, rerollable)
 // ------------------------------------------------------------
 
-export function rollMission(state: GameState): { state: GameState; goalRoll: DiceRoll; targetRoll: DiceRoll } {
+export function rollMission(state: GameState): {
+  state: GameState;
+  goalRoll: DiceRoll;
+  targetRoll: DiceRoll;
+} {
   const goalResult = rollDie(6);
   const targetResult = rollDie(6);
 
@@ -187,6 +213,7 @@ export function rollMission(state: GameState): { state: GameState; goalRoll: Dic
   state.missionTargetIndex = targetResult - 1;
   state.missionTarget = MISSION_TARGETS[targetResult - 1];
 
+  const base = Date.now();
   const goalRoll: DiceRoll = {
     playerId: "gm",
     playerName: "GM",
@@ -195,9 +222,10 @@ export function rollMission(state: GameState): { state: GameState; goalRoll: Dic
     result: goalResult,
     target: null,
     outcome: null,
-    timestamp: Date.now(),
+    modifier: null,
+    rolls: [goalResult],
+    timestamp: base,
   };
-
   const targetRoll: DiceRoll = {
     playerId: "gm",
     playerName: "GM",
@@ -206,14 +234,19 @@ export function rollMission(state: GameState): { state: GameState; goalRoll: Dic
     result: targetResult,
     target: null,
     outcome: null,
-    timestamp: Date.now() + 1,
+    modifier: null,
+    rolls: [targetResult],
+    timestamp: base + 1,
   };
 
   state.currentRoll = targetRoll;
   return { state, goalRoll, targetRoll };
 }
 
-export function rollNemesis(state: GameState): { state: GameState; roll: DiceRoll } {
+export function rollNemesis(state: GameState): {
+  state: GameState;
+  roll: DiceRoll;
+} {
   const result = rollDie(6);
   const nemesisData = NEMESES[result - 1];
 
@@ -221,8 +254,7 @@ export function rollNemesis(state: GameState): { state: GameState; roll: DiceRol
   state.nemesis = {
     name: nemesisData.name,
     description: nemesisData.description,
-    resolve: 3,
-    active: true,
+    defeated: false,
   };
 
   const roll: DiceRoll = {
@@ -233,6 +265,8 @@ export function rollNemesis(state: GameState): { state: GameState; roll: DiceRol
     result,
     target: null,
     outcome: null,
+    modifier: null,
+    rolls: [result],
     timestamp: Date.now(),
   };
 
@@ -240,9 +274,41 @@ export function rollNemesis(state: GameState): { state: GameState; roll: DiceRol
   return { state, roll };
 }
 
+export function toggleNemesisDefeated(state: GameState): GameState {
+  if (state.nemesis) {
+    state.nemesis.defeated = !state.nemesis.defeated;
+  }
+  return state;
+}
+
 // ------------------------------------------------------------
-// Gameplay Rolls
+// Gameplay Rolls (lean-in, d8)
 // ------------------------------------------------------------
+//
+// Resolution on a d8 vs the player's chaos number N:
+//   success/failure:  Civilized succeeds on OVER N, Goblin succeeds on UNDER N.
+//   exact (= N):       CRITICAL (either type) -> suspicion -1, no chaos move.
+//   chaos drift (lean-in):
+//     Goblin  success -> +1 (toward 8 / Full Goblin)
+//     Goblin  failure -> -1
+//     Civil.  success -> -1 (toward 0 / Full Human)
+//     Civil.  failure -> +1
+//   suspicion: failure -> +1, critical -> -1, plain success -> no change.
+
+function outcomeRank(
+  result: number,
+  chaos: number,
+  rollType: "civilized" | "goblin"
+): "success" | "failure" | "critical" {
+  if (result === chaos) return "critical";
+  if (rollType === "civilized") return result > chaos ? "success" : "failure";
+  return result < chaos ? "success" : "failure"; // goblin
+}
+
+// How "good" an outcome is for the roller, for picking adv/disadv dice.
+function outcomeScore(o: "success" | "failure" | "critical"): number {
+  return o === "critical" ? 2 : o === "success" ? 1 : 0;
+}
 
 export function performRoll(
   state: GameState,
@@ -252,69 +318,63 @@ export function performRoll(
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("Player not found");
 
-  // Check if nemesis gives disadvantage on civilized
-  const hasDisadvantage =
-    rollType === "civilized" &&
-    state.nemesis &&
-    state.nemesis.active &&
-    state.nemesis.resolve > 0;
+  const modifier: RollModifier = player.nextRollModifier;
+  // Consume the one-shot modifier.
+  player.nextRollModifier = null;
+
+  // Roll one die, or two for advantage/disadvantage.
+  const rolls: number[] = [rollDie(8)];
+  if (modifier) rolls.push(rollDie(8));
 
   let result: number;
-  if (hasDisadvantage) {
-    const r1 = rollDie(6);
-    const r2 = rollDie(6);
-    result = Math.min(r1, r2); // keep worst for civilized (want high)
+  if (modifier === "advantage") {
+    // keep the die with the best outcome for the roller
+    result = rolls.reduce((best, r) =>
+      outcomeScore(outcomeRank(r, player.chaos, rollType)) >
+      outcomeScore(outcomeRank(best, player.chaos, rollType))
+        ? r
+        : best
+    );
+  } else if (modifier === "disadvantage") {
+    result = rolls.reduce((worst, r) =>
+      outcomeScore(outcomeRank(r, player.chaos, rollType)) <
+      outcomeScore(outcomeRank(worst, player.chaos, rollType))
+        ? r
+        : worst
+    );
   } else {
-    result = rollDie(6);
+    result = rolls[0];
   }
 
-  // Determine outcome
-  let outcome: "success" | "failure" | "critical";
-  if (result === player.chaos) {
-    outcome = "critical";
-  } else if (rollType === "civilized") {
-    outcome = result > player.chaos ? "success" : "failure";
-  } else {
-    // goblin
-    outcome = result < player.chaos ? "success" : "failure";
-  }
+  const outcome = outcomeRank(result, player.chaos, rollType);
 
-  // Apply effects
+  // Apply chaos drift (lean-in) + suspicion.
   if (outcome === "critical") {
-    // Suspicion drops by 1, min 1
     state.suspicion = Math.max(1, state.suspicion - 1);
-  } else if (outcome === "failure") {
-    if (rollType === "civilized") {
-      player.chaos = Math.min(6, player.chaos + 1);
-    } else {
-      player.chaos = Math.max(0, player.chaos - 1);
-    }
-    // Suspicion increases
-    state.suspicion = Math.min(6, state.suspicion + 1);
-
-    // Check for suspicion 6
-    if (state.suspicion >= 6) {
-      handleSuspicionSix(state);
+  } else {
+    const goblin = rollType === "goblin";
+    const success = outcome === "success";
+    // Goblin success +1 / fail -1 ; Civilized success -1 / fail +1
+    const delta = goblin ? (success ? 1 : -1) : success ? -1 : 1;
+    player.chaos = clampChaos(player.chaos + delta);
+    if (outcome === "failure") {
+      state.suspicion = Math.min(6, state.suspicion + 1);
+      if (state.suspicion >= 6) triggerSuspicionEvent(state);
     }
   }
 
-  // Check for chaos extremes
-  if (player.chaos >= 6) {
-    player.isFullGoblin = true;
-    player.chaos = 6;
-  } else if (player.chaos <= 0) {
-    player.isAssimilated = true;
-    player.chaos = 0;
-  }
+  refreshExtremes(player);
 
   const roll: DiceRoll = {
     playerId,
     playerName: player.name,
     type: rollType,
-    dieSize: 6,
+    dieSize: 8,
     result,
     target: player.chaos,
     outcome,
+    modifier,
+    rolls,
     timestamp: Date.now(),
   };
 
@@ -322,40 +382,106 @@ export function performRoll(
   return { state, roll };
 }
 
-function handleSuspicionSix(state: GameState): void {
-  // Spawn specialist
-  const nextId = state.specialists.length + 1;
-  state.specialists.push({ id: nextId, active: true });
-  // Reset suspicion to 3
-  state.suspicion = 3;
+// ------------------------------------------------------------
+// Suspicion Verb Event
+// ------------------------------------------------------------
+
+function triggerSuspicionEvent(state: GameState): void {
+  state.suspicionEvent = { active: true, verbs: [] };
+}
+
+export function submitVerb(
+  state: GameState,
+  playerId: string,
+  verb: string
+): GameState {
+  if (!state.suspicionEvent.active) return state;
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player || player.isGM) return state;
+  if (state.suspicionEvent.verbs.some((v) => v.playerId === playerId)) return state;
+
+  state.suspicionEvent.verbs.push({
+    playerId,
+    playerName: player.name,
+    verb: verb.trim(),
+  });
+  return state;
+}
+
+export function resolveSuspicionEvent(state: GameState): GameState {
+  state.suspicionEvent = { active: false, verbs: [] };
+  state.suspicion = 1; // reset after the event
+  return state;
 }
 
 // ------------------------------------------------------------
-// Item Usage
+// Item Usage / Transfer
 // ------------------------------------------------------------
 
-export function useItemForComfort(state: GameState, playerId: string, itemIndex: number): GameState {
+export function useItem(
+  state: GameState,
+  playerId: string,
+  itemIndex: number,
+  effect: ItemEffect
+): GameState {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("Player not found");
-  if (itemIndex < 0 || itemIndex >= player.pocketItems.length) throw new Error("Invalid item");
+  if (itemIndex < 0 || itemIndex >= player.pocketItems.length)
+    throw new Error("Invalid item");
 
-  // Remove item
+  // Consume the item.
   player.pocketItems.splice(itemIndex, 1);
-  // Lower chaos by 1
-  player.chaos = Math.max(0, player.chaos - 1);
-  // Suspicion +1 if anyone sees (always, in the app)
-  state.suspicion = Math.min(6, state.suspicion + 1);
 
-  if (state.suspicion >= 6) {
-    handleSuspicionSix(state);
+  if (effect === "chaos-up") {
+    player.chaos = clampChaos(player.chaos + 1);
+  } else if (effect === "chaos-down") {
+    player.chaos = clampChaos(player.chaos - 1);
+  } else if (effect === "suspicion-down") {
+    state.suspicion = Math.max(1, state.suspicion - 1);
   }
 
-  // Check assimilation
-  if (player.chaos <= 0) {
-    player.isAssimilated = true;
-    player.chaos = 0;
-  }
+  refreshExtremes(player);
+  return state;
+}
 
+export function giveItem(
+  state: GameState,
+  fromPlayerId: string,
+  itemIndex: number,
+  toPlayerId: string
+): GameState {
+  const from = state.players.find((p) => p.id === fromPlayerId);
+  const to = state.players.find((p) => p.id === toPlayerId);
+  if (!from || !to) throw new Error("Player not found");
+  if (itemIndex < 0 || itemIndex >= from.pocketItems.length)
+    throw new Error("Invalid item");
+
+  const [item] = from.pocketItems.splice(itemIndex, 1);
+  to.pocketItems.push(item);
+  return state;
+}
+
+export function gmAddItem(
+  state: GameState,
+  playerId: string,
+  item: string
+): GameState {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) throw new Error("Player not found");
+  const trimmed = item.trim();
+  if (trimmed) player.pocketItems.push(trimmed);
+  return state;
+}
+
+export function gmRemoveItem(
+  state: GameState,
+  playerId: string,
+  itemIndex: number
+): GameState {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) throw new Error("Player not found");
+  if (itemIndex < 0 || itemIndex >= player.pocketItems.length) return state;
+  player.pocketItems.splice(itemIndex, 1);
   return state;
 }
 
@@ -363,30 +489,62 @@ export function useItemForComfort(state: GameState, playerId: string, itemIndex:
 // GM Actions
 // ------------------------------------------------------------
 
-export function setChaos(state: GameState, playerId: string, value: number): GameState {
+export function setChaos(
+  state: GameState,
+  playerId: string,
+  value: number
+): GameState {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("Player not found");
-  player.chaos = Math.max(0, Math.min(6, value));
-  player.isFullGoblin = player.chaos >= 6;
-  player.isAssimilated = player.chaos <= 0;
+  player.chaos = clampChaos(value);
+  refreshExtremes(player);
+  return state;
+}
+
+export function setAdvantage(
+  state: GameState,
+  playerId: string,
+  modifier: RollModifier
+): GameState {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) throw new Error("Player not found");
+  player.nextRollModifier = modifier;
   return state;
 }
 
 export function setSuspicion(state: GameState, value: number): GameState {
   state.suspicion = Math.max(1, Math.min(6, value));
-  if (state.suspicion >= 6) {
-    handleSuspicionSix(state);
-  }
+  if (state.suspicion >= 6) triggerSuspicionEvent(state);
   return state;
 }
 
-export function toggleMilestone(state: GameState, milestoneId: MilestoneId): GameState {
+export function toggleMilestone(
+  state: GameState,
+  milestoneId: MilestoneId
+): GameState {
   const milestone = state.milestones.find((m) => m.id === milestoneId);
-  if (milestone) {
-    milestone.completed = !milestone.completed;
+  if (milestone) milestone.completed = !milestone.completed;
+  return state;
+}
+
+// Completing an Act clears any broken (Full Goblin / Full Human) players,
+// snapping them back to the middle of the dial.
+export function completeAct(
+  state: GameState,
+  milestoneId: MilestoneId
+): GameState {
+  const milestone = state.milestones.find((m) => m.id === milestoneId);
+  if (milestone) milestone.completed = true;
+
+  for (const player of state.players) {
+    if (player.isFullGoblin || player.isFullHuman) {
+      player.chaos = CHAOS_START;
+      player.isFullGoblin = false;
+      player.isFullHuman = false;
+    }
   }
 
-  // Check win condition
+  // Win condition: all acts complete.
   if (state.milestones.every((m) => m.completed)) {
     state.phase = "game-over";
   }
@@ -394,21 +552,8 @@ export function toggleMilestone(state: GameState, milestoneId: MilestoneId): Gam
   return state;
 }
 
-export function damageNemesis(state: GameState): GameState {
-  if (!state.nemesis) return state;
-  state.nemesis.resolve = Math.max(0, state.nemesis.resolve - 1);
-  if (state.nemesis.resolve <= 0) {
-    state.nemesis.active = false;
-  }
-  return state;
-}
-
 export function nextScene(state: GameState): GameState {
   state.scene += 1;
-  // Nemesis returns at start of new scene if resolve > 0
-  if (state.nemesis && state.nemesis.resolve > 0) {
-    state.nemesis.active = true;
-  }
   return state;
 }
 

@@ -72,12 +72,12 @@ export default function GameOver({ state }: { state: GameState }) {
                   <td className="font-bold">{p.name} ({p.form?.split("(")[0]})</td>
                   <td className={`font-bold ${
                     p.isFullGoblin ? "!text-[#ff0000] !bg-[#ffcccc]" :
-                    p.isAssimilated ? "!text-[#0000cc] !bg-[#ccccff]" :
+                    p.isFullHuman ? "!text-[#0000cc] !bg-[#ccccff]" :
                     "!text-[#008000] !bg-[#ccffcc]"
                   }`}>
                     Chaos {p.chaos}
                     {p.isFullGoblin && " — FULL GOBLIN"}
-                    {p.isAssimilated && " — ASSIMILATED"}
+                    {p.isFullHuman && " — FULL HUMAN"}
                   </td>
                 </tr>
               ))}

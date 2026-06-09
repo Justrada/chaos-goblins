@@ -34,13 +34,21 @@ export default function MissionSetup({ state, isGM, currentRoll, send }: Mission
               <p className="title-90s text-4xl text-[#000080] mt-2" style={{ textShadow: "2px 2px 0 #c0c0c0" }}>
                 {state.missionGoal} {state.missionTarget}
               </p>
+              {isGM && (
+                <button
+                  onClick={() => send({ type: "gm-reroll-mission" })}
+                  className="btn-98 btn-98-orange mt-3"
+                >
+                  &#8635; Reroll Mission
+                </button>
+              )}
             </div>
           ) : (
             <div>
               <p className="text-xl text-[#808080] font-bold">Mission not yet revealed...</p>
               {isGM && (
                 <button
-                  onClick={() => send({ type: "gm-force-roll-result", playerId: "gm", result: 0, dieSize: 6 })}
+                  onClick={() => send({ type: "gm-roll-mission" })}
                   className="btn-98 btn-98-yellow btn-98-big mt-3"
                 >Roll Mission (2d6)</button>
               )}
@@ -57,14 +65,21 @@ export default function MissionSetup({ state, isGM, currentRoll, send }: Mission
                 {state.nemesis.name}
               </p>
               <p className="text-xl text-[#000080] mt-2 font-bold">{state.nemesis.description}</p>
-              <p className="text-2xl text-[#ff0000] mt-2">Resolve: ♥♥♥</p>
+              {isGM && (
+                <button
+                  onClick={() => send({ type: "gm-reroll-nemesis" })}
+                  className="btn-98 btn-98-orange mt-3"
+                >
+                  &#8635; Reroll Nemesis
+                </button>
+              )}
             </div>
           ) : (
             <div>
               <p className="text-xl text-[#808080] font-bold">Nemesis not yet revealed...</p>
               {isGM && state.missionGoal && (
                 <button
-                  onClick={() => send({ type: "gm-force-roll-result", playerId: "gm", result: 0, dieSize: 6 })}
+                  onClick={() => send({ type: "gm-roll-nemesis" })}
                   className="btn-98 btn-98-red btn-98-big mt-3"
                 >Roll Nemesis (d6)</button>
               )}

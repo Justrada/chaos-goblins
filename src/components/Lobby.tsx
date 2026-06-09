@@ -60,7 +60,7 @@ export default function Lobby({ state, playerId, isGM, hasJoined, onJoin, onStar
               disabled={!name.trim()}
               className="btn-98 btn-98-green btn-98-big w-full"
             >
-              {state.players.length === 0 ? "&#9758; Create Room (as GM)" : "&#9758; Join Game!"}
+              {state.players.length === 0 ? "☞ Create Room (as GM)" : "☞ Join Game!"}
             </button>
           </div>
         ) : (
@@ -80,7 +80,7 @@ export default function Lobby({ state, playerId, isGM, hasJoined, onJoin, onStar
                     style={{ borderStyle: "inset" }}
                   >
                     <span className={`text-2xl ${p.isGM ? "text-[#cc0000]" : "text-[#008000]"}`}>
-                      {p.isGM ? "&#9733;" : "&#9679;"}
+                      {p.isGM ? "★" : "●"}
                     </span>
                     <span className="text-lg font-bold text-[#000000]">{p.name}</span>
                     {p.isGM && (

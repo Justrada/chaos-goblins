@@ -11,15 +11,6 @@ export const FORMS = [
   "A Human Child (The Prince/Princess, a creepy orphan)",
 ];
 
-export const OBSESSIONS = [
-  "Shiny Things — You must touch anything that glitters.",
-  "Bugs — You are constantly looking for snacks in corners.",
-  "Textures — You need to rub your face on expensive fabrics.",
-  "Hiding — You feel exposed and constantly try to crawl under furniture.",
-  "Smells — You are constantly smelling and interested in the smell of things.",
-  'Sus — You are convinced that one of the goblins is lying about being a goblin.',
-];
-
 export const POCKET_ITEMS = [
   "A dead rat (stiff)",
   "A rusty spoon",
@@ -32,7 +23,7 @@ export const POCKET_ITEMS = [
   "A half-eaten sandwich",
   "A candle stub",
   "A bag of flour (leaking)",
-  "A semi magical Crystal",
+  "A semi-magical crystal",
   "A jar of angry bees",
   "A heavy rock",
   "A severed doll head",
@@ -41,6 +32,21 @@ export const POCKET_ITEMS = [
   "A small bell",
   "A jar of grease",
   "A discarded love letter in ornate calligraphy",
+  // --- expanded pool (need 3 unique each for up to 7 players = 21) ---
+  "A wad of pre-chewed gum",
+  "A single fancy boot (left foot)",
+  "A pocketful of suspiciously warm coins",
+  "A vial of unidentified green liquid",
+  "A taxidermied mouse wearing a tiny hat",
+  "A spool of someone else's hair",
+  "A monocle with no glass",
+  "A wheel of extremely pungent cheese",
+  "A firework labeled 'DEFINITELY SAFE'",
+  "A wanted poster of yourself (bad likeness)",
+  "A clockwork beetle that won't stop ticking",
+  "A pickled egg of unknown age",
+  "A length of chain with a tiny padlock",
+  "A jester's bell-hat (one bell missing)",
 ];
 
 export const NEMESES = [
