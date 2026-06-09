@@ -29,7 +29,7 @@ function rollDie(sides: number): number {
   return Math.floor(Math.random() * sides) + 1;
 }
 
-function generateRoomCode(): string {
+export function generateRoomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
   let code = "";
   for (let i = 0; i < 4; i++) {
@@ -84,7 +84,6 @@ export function createInitialState(roomCode?: string): GameState {
     adjectivesSubmitted: [],
     itemPool: shuffle(POCKET_ITEMS),
     scene: 1,
-    currentRoll: null,
   };
 }
 
@@ -151,7 +150,6 @@ export function rollForm(
     timestamp: Date.now(),
   };
 
-  state.currentRoll = roll;
   return { state, roll };
 }
 
@@ -183,7 +181,7 @@ export function rollPocketItem(
     playerId,
     playerName: player.name,
     type: "table",
-    dieSize: 20,
+    dieSize: POCKET_ITEMS.length,
     result: POCKET_ITEMS.indexOf(item) + 1,
     target: null,
     outcome: null,
@@ -192,7 +190,6 @@ export function rollPocketItem(
     timestamp: Date.now(),
   };
 
-  state.currentRoll = roll;
   return { state, roll };
 }
 
@@ -239,7 +236,6 @@ export function rollMission(state: GameState): {
     timestamp: base + 1,
   };
 
-  state.currentRoll = targetRoll;
   return { state, goalRoll, targetRoll };
 }
 
@@ -270,7 +266,6 @@ export function rollNemesis(state: GameState): {
     timestamp: Date.now(),
   };
 
-  state.currentRoll = roll;
   return { state, roll };
 }
 
@@ -317,6 +312,9 @@ export function performRoll(
 ): { state: GameState; roll: DiceRoll } {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("Player not found");
+
+  // The chaos number this roll is judged against (drift happens after).
+  const chaosTarget = player.chaos;
 
   const modifier: RollModifier = player.nextRollModifier;
   // Consume the one-shot modifier.
@@ -371,14 +369,13 @@ export function performRoll(
     type: rollType,
     dieSize: 8,
     result,
-    target: player.chaos,
+    target: chaosTarget,
     outcome,
     modifier,
     rolls,
     timestamp: Date.now(),
   };
 
-  state.currentRoll = roll;
   return { state, roll };
 }
 
@@ -400,10 +397,12 @@ export function submitVerb(
   if (!player || player.isGM) return state;
   if (state.suspicionEvent.verbs.some((v) => v.playerId === playerId)) return state;
 
+  const cleaned = String(verb ?? "").trim().slice(0, 24);
+  if (!cleaned) return state;
   state.suspicionEvent.verbs.push({
     playerId,
     playerName: player.name,
-    verb: verb.trim(),
+    verb: cleaned,
   });
   return state;
 }
@@ -418,16 +417,22 @@ export function resolveSuspicionEvent(state: GameState): GameState {
 // Item Usage / Transfer
 // ------------------------------------------------------------
 
-export function useItem(
+// Named without a `use` prefix on purpose — these are plain game-logic
+// functions, and `use*` names trip React's hook lint rules at call sites.
+export function spendItem(
   state: GameState,
   playerId: string,
   itemIndex: number,
   effect: ItemEffect
 ): GameState {
   const player = state.players.find((p) => p.id === playerId);
-  if (!player) throw new Error("Player not found");
-  if (itemIndex < 0 || itemIndex >= player.pocketItems.length)
-    throw new Error("Invalid item");
+  if (!player) return state;
+  // Validate everything BEFORE consuming the item (stale indexes from
+  // double-clicks and bad effect strings must not eat the item).
+  if (!Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= player.pocketItems.length)
+    return state;
+  if (effect !== "chaos-up" && effect !== "chaos-down" && effect !== "suspicion-down")
+    return state;
 
   // Consume the item.
   player.pocketItems.splice(itemIndex, 1);
@@ -452,9 +457,9 @@ export function giveItem(
 ): GameState {
   const from = state.players.find((p) => p.id === fromPlayerId);
   const to = state.players.find((p) => p.id === toPlayerId);
-  if (!from || !to) throw new Error("Player not found");
-  if (itemIndex < 0 || itemIndex >= from.pocketItems.length)
-    throw new Error("Invalid item");
+  if (!from || !to || from === to) return state;
+  if (!Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= from.pocketItems.length)
+    return state;
 
   const [item] = from.pocketItems.splice(itemIndex, 1);
   to.pocketItems.push(item);
@@ -467,8 +472,8 @@ export function gmAddItem(
   item: string
 ): GameState {
   const player = state.players.find((p) => p.id === playerId);
-  if (!player) throw new Error("Player not found");
-  const trimmed = item.trim();
+  if (!player) return state;
+  const trimmed = String(item ?? "").trim().slice(0, 60);
   if (trimmed) player.pocketItems.push(trimmed);
   return state;
 }
@@ -479,8 +484,9 @@ export function gmRemoveItem(
   itemIndex: number
 ): GameState {
   const player = state.players.find((p) => p.id === playerId);
-  if (!player) throw new Error("Player not found");
-  if (itemIndex < 0 || itemIndex >= player.pocketItems.length) return state;
+  if (!player) return state;
+  if (!Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= player.pocketItems.length)
+    return state;
   player.pocketItems.splice(itemIndex, 1);
   return state;
 }
@@ -495,8 +501,8 @@ export function setChaos(
   value: number
 ): GameState {
   const player = state.players.find((p) => p.id === playerId);
-  if (!player) throw new Error("Player not found");
-  player.chaos = clampChaos(value);
+  if (!player || !Number.isFinite(value)) return state;
+  player.chaos = clampChaos(Math.round(value));
   refreshExtremes(player);
   return state;
 }
@@ -507,13 +513,16 @@ export function setAdvantage(
   modifier: RollModifier
 ): GameState {
   const player = state.players.find((p) => p.id === playerId);
-  if (!player) throw new Error("Player not found");
+  if (!player) return state;
+  if (modifier !== "advantage" && modifier !== "disadvantage" && modifier !== null)
+    return state;
   player.nextRollModifier = modifier;
   return state;
 }
 
 export function setSuspicion(state: GameState, value: number): GameState {
-  state.suspicion = Math.max(1, Math.min(6, value));
+  if (!Number.isFinite(value)) return state;
+  state.suspicion = Math.max(1, Math.min(6, Math.round(value)));
   if (state.suspicion >= 6) triggerSuspicionEvent(state);
   return state;
 }
@@ -575,7 +584,6 @@ export function resetGame(state: GameState): GameState {
   state.adjectivesSubmitted = [];
   state.itemPool = shuffle(POCKET_ITEMS);
   state.scene = 1;
-  state.currentRoll = null;
 
   for (const p of state.players) {
     p.form = null;
@@ -591,7 +599,7 @@ export function resetGame(state: GameState): GameState {
   return state;
 }
 
-export function useHotline(state: GameState): GameState {
+export function markHotlineUsed(state: GameState): GameState {
   state.hotlineUsed = true;
   return state;
 }

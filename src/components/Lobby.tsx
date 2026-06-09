@@ -84,7 +84,10 @@ export default function Lobby({ state, playerId, isGM, hasJoined, onJoin, onStar
                     </span>
                     <span className="text-lg font-bold text-[#000000]">{p.name}</span>
                     {p.isGM && (
-                      <span className="text-sm bg-[#ff0000] text-[#ffffff] px-2 py-0.5 font-bold ml-auto border-2 outset">
+                      <span
+                        className="text-sm bg-[#ff0000] text-[#ffffff] px-2 py-0.5 font-bold ml-auto border-2"
+                        style={{ borderStyle: "outset" }}
+                      >
                         GM
                       </span>
                     )}

@@ -82,18 +82,6 @@ body {
   border: 3px outset #ff8080;
 }
 
-.panel-purple {
-  background: #800080;
-  color: #ffffff;
-  border: 3px outset #c040c0;
-}
-
-.panel-cyan {
-  background: #008080;
-  color: #ffffff;
-  border: 3px outset #40c0c0;
-}
-
 .panel-white {
   background: #ffffff;
   color: #000000;
@@ -231,24 +219,6 @@ body {
 }
 
 /* ========================================
-   MARQUEE TEXT (CSS-only)
-   ======================================== */
-.marquee-text {
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.marquee-text span {
-  display: inline-block;
-  animation: marquee-scroll 12s linear infinite;
-}
-
-@keyframes marquee-scroll {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
-/* ========================================
    BLINK (90s classic)
    ======================================== */
 .blink {
@@ -271,15 +241,6 @@ body {
 
 .title-shadow {
   text-shadow: 3px 3px 0 #000000;
-}
-
-/* ========================================
-   CHAOS BAR
-   ======================================== */
-.chaos-bar-segment {
-  width: 32px;
-  height: 32px;
-  border: 2px outset #c0c0c0;
 }
 
 /* ========================================
@@ -370,18 +331,20 @@ body {
   70%  { transform: translate(-50%, -50%) scale(1.1) rotate(-3deg); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1.3) rotate(0deg); opacity: 0; }
 }
+/* Inset shadows: these play on an overlay INSIDE the clipped window,
+   so the flash ring must render inward to be visible. */
 @keyframes tile-flash-up {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,0,0,0); }
-  30%      { box-shadow: 0 0 0 6px rgba(255,40,40,0.9); }
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(255,0,0,0); }
+  30%      { box-shadow: inset 0 0 24px 8px rgba(255,40,40,0.9); }
 }
 @keyframes tile-flash-down {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0,120,255,0); }
-  30%      { box-shadow: 0 0 0 6px rgba(40,160,255,0.9); }
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(0,120,255,0); }
+  30%      { box-shadow: inset 0 0 24px 8px rgba(40,160,255,0.9); }
 }
 @keyframes tile-flash-crit {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,0,0); }
-  25%      { box-shadow: 0 0 0 10px rgba(255,255,0,0.95); }
-  60%      { box-shadow: 0 0 0 4px rgba(255,200,0,0.6); }
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(255,255,0,0); }
+  25%      { box-shadow: inset 0 0 36px 12px rgba(255,255,0,0.95); }
+  60%      { box-shadow: inset 0 0 16px 5px rgba(255,200,0,0.6); }
 }
 .float-up   { animation: float-up 1s ease-out forwards; }
 .float-down { animation: float-down 1s ease-in forwards; }
@@ -423,9 +386,6 @@ body {
 }
 .win98-titlebar-cyan {
   background: linear-gradient(90deg, #006a6a, #18b0c8);
-}
-.win98-titlebar-inactive {
-  background: linear-gradient(90deg, #7f7f7f, #b5b5b5);
 }
 .win98-tbtn {
   width: 18px;
@@ -487,15 +447,4 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.win98-desktop-icon {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: 64px;
-  color: #fff;
-  font-size: 11px;
-  text-align: center;
-  text-shadow: 1px 1px 0 #000;
 }

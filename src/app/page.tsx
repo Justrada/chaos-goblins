@@ -2,26 +2,26 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { generateRoomCode } from "@/lib/gameLogic";
 
 export default function Home() {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState("");
   const [visitorCount, setVisitorCount] = useState<string | null>(null);
 
-  // Generate visitor count only on the client to avoid SSR hydration mismatch
+  // Generate visitor count client-side only (avoids SSR hydration mismatch);
+  // the tiny delay also gives it that authentic slow-loading-counter feel.
   useEffect(() => {
-    setVisitorCount(
-      String(Math.floor(Math.random() * 9000) + 1000).padStart(6, "0")
-    );
+    const t = setTimeout(() => {
+      setVisitorCount(
+        String(Math.floor(Math.random() * 9000) + 1000).padStart(6, "0")
+      );
+    }, 400);
+    return () => clearTimeout(t);
   }, []);
 
   const createRoom = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "";
-    for (let i = 0; i < 4; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    router.push(`/room/${code}`);
+    router.push(`/room/${generateRoomCode()}`);
   };
 
   const joinRoom = () => {

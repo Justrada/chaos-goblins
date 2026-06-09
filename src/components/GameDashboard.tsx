@@ -10,8 +10,8 @@ import {
   CHAOS_MAX,
 } from "@/lib/types";
 import { SUSPICION_DESCRIPTIONS, WIZARD_HAZARDS } from "@/lib/tables";
+import { chaosZoneColor } from "@/lib/chaosColors";
 import DiceRoller from "./DiceRoller";
-import VideoChat from "./VideoChat";
 import StreamSetup from "./StreamSetup";
 
 type PlayerT = GameState["players"][0];
@@ -22,15 +22,6 @@ interface GameDashboardProps {
   isGM: boolean;
   currentRoll: DiceRoll | null;
   send: (msg: ClientMessage) => void;
-}
-
-function chaosSegmentColor(i: number): string {
-  // 0 (Full Human / blue) .. 8 (Full Goblin / red)
-  if (i >= 7) return "#ff0000";
-  if (i >= 5) return "#ff6600";
-  if (i >= 3) return "#cccc00";
-  if (i >= 1) return "#0088ff";
-  return "#0000cc";
 }
 
 export default function GameDashboard({
@@ -50,9 +41,6 @@ export default function GameDashboard({
         {state.suspicionEvent.active && (
           <SuspicionEventModal state={state} me={me} isGM={isGM} send={send} />
         )}
-
-        {/* Video chat (everyone on camera) */}
-        {me && <VideoChat seat={me.seat} isGM={isGM} />}
 
         {/* Mission Banner */}
         <div className="panel-yellow p-4 text-center">
@@ -215,13 +203,13 @@ function MyItemRow({
   send: (msg: ClientMessage) => void;
 }) {
   const [giveTo, setGiveTo] = useState("");
-  const useEffect = (effect: ItemEffect) => send({ type: "player-use-item", itemIndex: index, effect });
+  const applyUse = (effect: ItemEffect) => send({ type: "player-use-item", itemIndex: index, effect });
   return (
     <div className="panel-white p-2 flex flex-wrap items-center gap-2">
       <span className="text-base text-[#000080] font-bold flex-1 min-w-[140px] text-left">&#9670; {item}</span>
-      <button onClick={() => useEffect("chaos-up")} className="btn-98 btn-98-red !text-sm !px-2 !py-1">Chaos ▲</button>
-      <button onClick={() => useEffect("chaos-down")} className="btn-98 btn-98-blue !text-sm !px-2 !py-1">Chaos ▼</button>
-      <button onClick={() => useEffect("suspicion-down")} className="btn-98 btn-98-green !text-sm !px-2 !py-1">Susp ▼</button>
+      <button onClick={() => applyUse("chaos-up")} className="btn-98 btn-98-red !text-sm !px-2 !py-1">Chaos ▲</button>
+      <button onClick={() => applyUse("chaos-down")} className="btn-98 btn-98-blue !text-sm !px-2 !py-1">Chaos ▼</button>
+      <button onClick={() => applyUse("suspicion-down")} className="btn-98 btn-98-green !text-sm !px-2 !py-1">Susp ▼</button>
       {others.length > 0 && (
         <span className="flex items-center gap-1">
           <select value={giveTo} onChange={(e) => setGiveTo(e.target.value)}
@@ -276,7 +264,7 @@ function PlayerCard({ player, isMe }: { player: PlayerT; isMe: boolean }) {
           {Array.from({ length: CHAOS_MAX + 1 }).map((_, i) => (
             <div key={i} className="flex-1 h-5"
               style={{
-                background: i <= player.chaos ? chaosSegmentColor(i) : "#c0c0c0",
+                background: i <= player.chaos ? chaosZoneColor(i) : "#c0c0c0",
                 border: "2px solid #000",
                 borderStyle: i <= player.chaos ? "outset" : "inset",
               }} />
@@ -385,7 +373,12 @@ function GMPanel({
   send: (msg: ClientMessage) => void;
 }) {
   const nonGMPlayers = state.players.filter((p) => !p.isGM);
-  const randomHazard = WIZARD_HAZARDS[Math.floor(Math.random() * WIZARD_HAZARDS.length)];
+  // Deterministic hazard suggestion (room + scene seeded): stable across
+  // re-renders and refreshes, rotates each scene. Pure — no Math.random.
+  const hazardSeed =
+    state.roomCode.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0) +
+    state.scene * 7;
+  const randomHazard = WIZARD_HAZARDS[hazardSeed % WIZARD_HAZARDS.length];
 
   return (
     <div className="panel-raised p-5 space-y-4">

@@ -8,6 +8,7 @@ import CharacterCreation from "@/components/CharacterCreation";
 import MissionSetup from "@/components/MissionSetup";
 import GameDashboard from "@/components/GameDashboard";
 import GameOver from "@/components/GameOver";
+import VideoChat from "@/components/VideoChat";
 
 export default function RoomPage() {
   const params = useParams();
@@ -46,6 +47,14 @@ export default function RoomPage() {
       {error && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 panel-red px-6 py-3 text-xl font-bold">
           {error}
+        </div>
+      )}
+
+      {/* Floating video chat — mounted once at page level so the camera
+          connection survives phase changes. */}
+      {me && (
+        <div className="fixed bottom-2 right-2 z-40 w-80">
+          <VideoChat seat={me.seat} isGM={isGM} name={me.name} />
         </div>
       )}
 

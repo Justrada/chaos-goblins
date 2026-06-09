@@ -138,6 +138,13 @@ export default function DiceRoller({ roll }: DiceRollerProps) {
           </p>
         )}
 
+        {/* Advantage/disadvantage: show both dice and which one counted */}
+        {roll?.modifier && roll.rolls?.length === 2 && !isRolling && (
+          <p className="text-lg text-[#ffff00] font-bold title-shadow">
+            {roll.modifier.toUpperCase()}: rolled {roll.rolls.join(" & ")} → kept {roll.result}
+          </p>
+        )}
+
         {/* For table rolls */}
         {roll?.type === "table" && !isRolling && displayNumber !== null && (
           <p className="text-lg text-[#ff00ff]">Table roll: {displayNumber}</p>

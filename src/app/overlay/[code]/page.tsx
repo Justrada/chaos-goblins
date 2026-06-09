@@ -5,42 +5,36 @@ import { useParams } from "next/navigation";
 import { usePartySocket } from "@/lib/usePartySocket";
 import { GameState, CHAOS_MAX } from "@/lib/types";
 import { sceneTileUrl, streamIdFor } from "@/lib/video";
+import { chaosZoneColor } from "@/lib/chaosColors";
 
 // ============================================================
 // Combined Scene — styled as a Windows 98 desktop.
 // Each seat's VDO.Ninja webcam is an "open window"; the game
 // HUD lives in the taskbar. Chaos lives on each window's title
 // bar + status meter, with change animations and a live mic glow.
+// Connects as a spectator so it never collides with a player tab.
 // ============================================================
 
 const stroke = {
   textShadow: "2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000",
 };
 
-function chaosZoneColor(chaos: number): string {
-  if (chaos >= 7) return "#ff0000";
-  if (chaos >= 5) return "#ff6600";
-  if (chaos >= 3) return "#cccc00";
-  if (chaos >= 1) return "#0088ff";
-  return "#0066ff";
-}
-
 type AnimKind = "up" | "down" | "crit";
 interface Anim {
   kind: AnimKind;
-  nonce: number;
+  // Content-derived key: consecutive anims for a player always produce a
+  // different key, so the keyed overlay remounts and the animation replays.
+  key: string;
 }
 
 export default function CombinedScenePage() {
   const params = useParams();
   const code = (params.code as string).toUpperCase();
-  const { state, currentRoll } = usePartySocket(code);
+  const { state, currentRoll } = usePartySocket(code, { spectator: true });
 
   const [anims, setAnims] = useState<Record<string, Anim>>({});
-  const [loudness, setLoudness] = useState<Record<number, number>>({});
-  const prevChaos = useRef<Record<string, number>>({});
-  const lastRollTs = useRef<number>(0);
-  const nonce = useRef(0);
+  const [seenChaos, setSeenChaos] = useState<Record<string, number>>({});
+  const [seenRollTs, setSeenRollTs] = useState(0);
 
   // Opaque teal Win98 desktop background.
   useEffect(() => {
@@ -54,31 +48,34 @@ export default function CombinedScenePage() {
     };
   }, []);
 
-  // Chaos diffs → up/down animations.
-  useEffect(() => {
-    if (!state) return;
-    const next: Record<string, Anim> = {};
-    for (const p of state.players) {
-      const prev = prevChaos.current[p.id];
-      if (prev !== undefined && p.chaos !== prev) {
-        nonce.current += 1;
-        next[p.id] = { kind: p.chaos > prev ? "up" : "down", nonce: nonce.current };
-      }
-      prevChaos.current[p.id] = p.chaos;
-    }
-    if (Object.keys(next).length) setAnims((a) => ({ ...a, ...next }));
-  }, [state]);
-
-  // Critical roll → gold burst.
-  useEffect(() => {
-    if (!currentRoll || currentRoll.outcome !== "critical") return;
-    if (currentRoll.timestamp === lastRollTs.current) return;
-    lastRollTs.current = currentRoll.timestamp;
-    nonce.current += 1;
-    setAnims((a) => ({ ...a, [currentRoll.playerId]: { kind: "crit", nonce: nonce.current } }));
-  }, [currentRoll]);
-
   if (!state) return null;
+
+  // Detect chaos changes and crits during render (React's "storing
+  // information from previous renders" pattern) — no effects involved.
+  const chaosUpdates: Record<string, number> = {};
+  const animUpdates: Record<string, Anim> = {};
+  for (const p of state.players) {
+    const prev = seenChaos[p.id];
+    if (prev === undefined) {
+      chaosUpdates[p.id] = p.chaos;
+    } else if (p.chaos !== prev) {
+      chaosUpdates[p.id] = p.chaos;
+      const kind: AnimKind = p.chaos > prev ? "up" : "down";
+      animUpdates[p.id] = { kind, key: `${kind}-${p.chaos}` };
+    }
+  }
+  let rollTsUpdate: number | null = null;
+  if (
+    currentRoll &&
+    currentRoll.outcome === "critical" &&
+    currentRoll.timestamp !== seenRollTs
+  ) {
+    rollTsUpdate = currentRoll.timestamp;
+    animUpdates[currentRoll.playerId] = { kind: "crit", key: `crit-${currentRoll.timestamp}` };
+  }
+  if (Object.keys(chaosUpdates).length) setSeenChaos({ ...seenChaos, ...chaosUpdates });
+  if (rollTsUpdate !== null) setSeenRollTs(rollTsUpdate);
+  if (Object.keys(animUpdates).length) setAnims({ ...anims, ...animUpdates });
 
   const windows = [...state.players].sort((a, b) => a.seat - b.seat);
 
@@ -90,13 +87,7 @@ export default function CombinedScenePage() {
         gridAutoRows: "1fr",
       }}>
         {windows.map((p) => (
-          <SeatWindow
-            key={p.id}
-            player={p}
-            anim={anims[p.id]}
-            loud={loudness[p.seat] ?? 0}
-            onLoud={(v) => setLoudness((l) => (l[p.seat] === v ? l : { ...l, [p.seat]: v }))}
-          />
+          <SeatWindow key={p.id} player={p} anim={anims[p.id]} />
         ))}
       </div>
 
@@ -110,18 +101,17 @@ export default function CombinedScenePage() {
 }
 
 function SeatWindow({
-  player, anim, loud, onLoud,
+  player, anim,
 }: {
   player: GameState["players"][0];
   anim: Anim | undefined;
-  loud: number;
-  onLoud: (v: number) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [loud, setLoud] = useState(0);
   const id = streamIdFor(player.seat, player.isGM);
   const src = sceneTileUrl(player.seat, player.isGM);
 
-  // VDO loudness → mic glow.
+  // VDO loudness → mic glow. Local state so only this window re-renders.
   useEffect(() => {
     const start = () => iframeRef.current?.contentWindow?.postMessage({ getLoudness: true }, "*");
     const t = setInterval(start, 3000);
@@ -140,11 +130,11 @@ function SeatWindow({
         }
       }
       const norm = raw > 1 ? raw / 100 : raw;
-      onLoud(Math.max(0, Math.min(1, norm)));
+      setLoud(Math.max(0, Math.min(1, norm)));
     };
     window.addEventListener("message", onMsg);
     return () => { clearInterval(t); window.removeEventListener("message", onMsg); };
-  }, [onLoud]);
+  }, []);
 
   const isGM = player.isGM;
   const talking = loud > 0.06;
@@ -158,12 +148,14 @@ function SeatWindow({
         ? "win98-titlebar-cyan"
         : "";
 
-  const flashClass = anim?.kind === "up" ? "tile-flash-up" : anim?.kind === "down" ? "tile-flash-down" : anim?.kind === "crit" ? "tile-flash-crit" : "";
+  const flashClass =
+    anim?.kind === "up" ? "tile-flash-up" :
+    anim?.kind === "down" ? "tile-flash-down" :
+    anim?.kind === "crit" ? "tile-flash-crit" : "";
 
   return (
     <div
-      key={anim?.nonce}
-      className={`win98-window ${flashClass}`}
+      className="win98-window"
       style={{
         boxShadow: talking
           ? `0 0 ${10 + glow * 34}px ${2 + glow * 10}px rgba(57,255,20,${0.5 + glow * 0.5}), 2px 2px 0 rgba(0,0,0,0.5)`
@@ -201,15 +193,21 @@ function SeatWindow({
             {player.nextRollModifier === "advantage" ? "ADV" : "DIS"}
           </span>
         )}
-        {/* Animations */}
-        {anim?.kind === "up" && (
-          <span key={anim.nonce} className="float-up absolute left-1/2 top-1/2 font-impact text-4xl text-[#ff3030] pointer-events-none" style={stroke}>▲ +1</span>
-        )}
-        {anim?.kind === "down" && (
-          <span key={anim.nonce} className="float-down absolute left-1/2 top-1/2 font-impact text-4xl text-[#30aaff] pointer-events-none" style={stroke}>▼ −1</span>
-        )}
-        {anim?.kind === "crit" && (
-          <span key={anim.nonce} className="crit-burst absolute left-1/2 top-1/2 font-impact text-4xl text-[#ffff00] pointer-events-none whitespace-nowrap" style={stroke}>★ CRIT! ★</span>
+
+        {/* Flash + chaos change animations live on a keyed overlay div so the
+            video iframe itself is never remounted by an animation replay. */}
+        {anim && (
+          <div key={anim.key} className={`absolute inset-0 pointer-events-none z-10 ${flashClass}`}>
+            {anim.kind === "up" && (
+              <span className="float-up absolute left-1/2 top-1/2 font-impact text-4xl text-[#ff3030]" style={stroke}>▲ +1</span>
+            )}
+            {anim.kind === "down" && (
+              <span className="float-down absolute left-1/2 top-1/2 font-impact text-4xl text-[#30aaff]" style={stroke}>▼ −1</span>
+            )}
+            {anim.kind === "crit" && (
+              <span className="crit-burst absolute left-1/2 top-1/2 font-impact text-4xl text-[#ffff00] whitespace-nowrap" style={stroke}>★ CRIT! ★</span>
+            )}
+          </div>
         )}
       </div>
 

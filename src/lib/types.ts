@@ -106,9 +106,6 @@ export interface GameState {
 
   // Current scene number
   scene: number;
-
-  // Latest roll for animation
-  currentRoll: DiceRoll | null;
 }
 
 // ============================================================

@@ -20,7 +20,7 @@ import {
   rollNemesis,
   toggleNemesisDefeated,
   performRoll,
-  useItem,
+  spendItem,
   giveItem,
   gmAddItem,
   gmRemoveItem,
@@ -32,7 +32,7 @@ import {
   toggleMilestone,
   completeAct,
   nextScene,
-  useHotline,
+  markHotlineUsed,
   resetGame,
 } from "../src/lib/gameLogic";
 
@@ -52,6 +52,9 @@ export default class ChaosGoblinsServer implements Party.Server {
   onClose(conn: Party.Connection) {
     // Remove player only if still in the lobby.
     if (this.state.phase === "lobby") {
+      // A refresh can reconnect (same persisted id) before the old socket's
+      // close event lands — if a live connection exists, keep the player.
+      if (this.room.getConnection(conn.id)) return;
       this.state.players = this.state.players.filter((p) => p.id !== conn.id);
       this.broadcast({ type: "state", state: this.state });
     }
@@ -64,7 +67,16 @@ export default class ChaosGoblinsServer implements Party.Server {
     } catch {
       return;
     }
+    // Never let one bad message take down the room.
+    try {
+      this.handleMessage(msg, sender);
+    } catch (err) {
+      console.error("Error handling message", msg?.type, err);
+      this.send(sender, { type: "error", message: "Something went wrong" });
+    }
+  }
 
+  handleMessage(msg: ClientMessage, sender: Party.Connection) {
     const senderPlayer = this.state.players.find((p) => p.id === sender.id);
 
     switch (msg.type) {
@@ -76,14 +88,19 @@ export default class ChaosGoblinsServer implements Party.Server {
         }
         if (this.state.players.find((p) => p.id === sender.id)) return;
 
-        const isGM = this.state.players.length === 0;
+        const name = String(msg.name ?? "").trim().slice(0, 24) || "Goblin";
+        // First joiner is GM; also reclaim GM if the GM dropped out of the
+        // lobby (e.g. page refresh removed them) and nobody holds the role.
+        const isGM =
+          this.state.players.length === 0 ||
+          !this.state.players.some((p) => p.isGM);
         const nonGMCount = this.state.players.filter((p) => !p.isGM).length;
         if (!isGM && nonGMCount >= 7) {
           this.send(sender, { type: "error", message: "Game is full (7 players max)" });
           return;
         }
         const seat = nextSeat(this.state, isGM);
-        const player = createPlayer(sender.id, msg.name, isGM, seat);
+        const player = createPlayer(sender.id, name, isGM, seat);
         this.state.players.push(player);
         this.broadcast({ type: "state", state: this.state });
         break;
@@ -135,7 +152,14 @@ export default class ChaosGoblinsServer implements Party.Server {
         if (!senderPlayer || senderPlayer.isGM) return;
         if (this.state.adjectivesSubmitted.includes(sender.id)) return;
 
-        this.state.adjectivePool.push(...msg.adjectives);
+        if (!Array.isArray(msg.adjectives)) return;
+        const adjectives = msg.adjectives
+          .slice(0, 3)
+          .map((a) => String(a ?? "").trim().slice(0, 30))
+          .filter(Boolean);
+        if (adjectives.length !== 3) return;
+
+        this.state.adjectivePool.push(...adjectives);
         this.state.adjectivesSubmitted.push(sender.id);
 
         const nonGMPlayers = this.state.players.filter((p) => !p.isGM);
@@ -148,7 +172,7 @@ export default class ChaosGoblinsServer implements Party.Server {
 
       case "submit-catchphrase": {
         if (!senderPlayer || senderPlayer.isGM) return;
-        senderPlayer.catchphrase = msg.catchphrase;
+        senderPlayer.catchphrase = String(msg.catchphrase ?? "").trim().slice(0, 80);
         this.broadcast({ type: "state", state: this.state });
         break;
       }
@@ -196,7 +220,7 @@ export default class ChaosGoblinsServer implements Party.Server {
 
       case "player-use-item": {
         if (!senderPlayer || senderPlayer.isGM) return;
-        useItem(this.state, sender.id, msg.itemIndex, msg.effect);
+        spendItem(this.state, sender.id, msg.itemIndex, msg.effect);
         this.broadcast({ type: "state", state: this.state });
         break;
       }
@@ -274,7 +298,7 @@ export default class ChaosGoblinsServer implements Party.Server {
 
       case "gm-use-hotline": {
         if (!senderPlayer?.isGM) return;
-        useHotline(this.state);
+        markHotlineUsed(this.state);
         this.broadcast({ type: "state", state: this.state });
         break;
       }

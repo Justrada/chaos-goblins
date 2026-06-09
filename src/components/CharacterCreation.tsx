@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { GameState, DiceRoll, ClientMessage } from "@/lib/types";
-import { FORMS, POCKET_ITEMS } from "@/lib/tables";
+import { FORMS } from "@/lib/tables";
 import DiceRoller from "./DiceRoller";
 
 interface CharacterCreationProps {
@@ -62,7 +62,7 @@ export default function CharacterCreation({
 
         {/* Phase-specific content */}
         {state.phase === "character-creation-form" && (
-          <FormPhase state={state} me={me} isGM={isGM} send={send} nonGMPlayers={nonGMPlayers} />
+          <FormPhase me={me} isGM={isGM} send={send} nonGMPlayers={nonGMPlayers} />
         )}
 
         {state.phase === "character-creation-description" && (
@@ -122,9 +122,8 @@ export default function CharacterCreation({
 }
 
 function FormPhase({
-  state, me, isGM, send, nonGMPlayers,
+  me, isGM, send, nonGMPlayers,
 }: {
-  state: GameState;
   me: GameState["players"][0] | undefined;
   isGM: boolean;
   send: (msg: ClientMessage) => void;

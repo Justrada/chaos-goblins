@@ -17,28 +17,32 @@ export default function GameOver({
   const nonGMPlayers = state.players.filter((p) => !p.isGM);
 
   useEffect(() => {
-    if (allMilestonesComplete) {
-      const duration = 3000;
-      const end = Date.now() + duration;
-      const frame = () => {
-        confetti({
-          particleCount: 3,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ["#00ff00", "#ffff00", "#ff0000"],
-        });
-        confetti({
-          particleCount: 3,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ["#0000ff", "#ff00ff", "#00ffff"],
-        });
-        if (Date.now() < end) requestAnimationFrame(frame);
-      };
-      frame();
-    }
+    if (!allMilestonesComplete) return;
+    let cancelled = false;
+    const end = Date.now() + 3000;
+    const frame = () => {
+      if (cancelled) return;
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ["#00ff00", "#ffff00", "#ff0000"],
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ["#0000ff", "#ff00ff", "#00ffff"],
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+    // Stop the burst if the GM hits Play Again mid-confetti.
+    return () => {
+      cancelled = true;
+    };
   }, [allMilestonesComplete]);
 
   return (
