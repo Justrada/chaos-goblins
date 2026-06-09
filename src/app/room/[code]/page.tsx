@@ -91,7 +91,9 @@ export default function RoomPage() {
         />
       )}
 
-      {state.phase === "game-over" && <GameOver state={state} />}
+      {state.phase === "game-over" && (
+        <GameOver state={state} isGM={isGM} send={send} />
+      )}
     </>
   );
 }

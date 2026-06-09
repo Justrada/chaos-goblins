@@ -557,6 +557,40 @@ export function nextScene(state: GameState): GameState {
   return state;
 }
 
+// Restart the game in the SAME room: wipe all game progress and characters
+// but keep the connected players (id, name, GM role, seat). Back to lobby.
+export function resetGame(state: GameState): GameState {
+  state.phase = "lobby";
+  state.suspicion = 1;
+  state.suspicionEvent = { active: false, verbs: [] };
+  state.milestones.forEach((m) => (m.completed = false));
+  state.nemesis = null;
+  state.nemesisIndex = null;
+  state.missionGoal = null;
+  state.missionGoalIndex = null;
+  state.missionTarget = null;
+  state.missionTargetIndex = null;
+  state.hotlineUsed = false;
+  state.adjectivePool = [];
+  state.adjectivesSubmitted = [];
+  state.itemPool = shuffle(POCKET_ITEMS);
+  state.scene = 1;
+  state.currentRoll = null;
+
+  for (const p of state.players) {
+    p.form = null;
+    p.formIndex = null;
+    p.adjectives = [];
+    p.catchphrase = "";
+    p.pocketItems = [];
+    p.chaos = CHAOS_START;
+    p.isFullGoblin = false;
+    p.isFullHuman = false;
+    p.nextRollModifier = null;
+  }
+  return state;
+}
+
 export function useHotline(state: GameState): GameState {
   state.hotlineUsed = true;
   return state;

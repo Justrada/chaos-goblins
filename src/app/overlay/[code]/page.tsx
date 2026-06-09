@@ -7,11 +7,10 @@ import { GameState, CHAOS_MAX } from "@/lib/types";
 import { sceneTileUrl, streamIdFor } from "@/lib/video";
 
 // ============================================================
-// Combined Scene — the all-in-one website overlay for OBS.
-// Embeds each seat's VDO.Ninja video tile and draws the frame,
-// chaos-number border, change animations, and live mic glow.
-// (Separate per-guest raw feeds are still available via the GM
-//  Stream Setup panel for a separate recording workflow.)
+// Combined Scene — styled as a Windows 98 desktop.
+// Each seat's VDO.Ninja webcam is an "open window"; the game
+// HUD lives in the taskbar. Chaos lives on each window's title
+// bar + status meter, with change animations and a live mic glow.
 // ============================================================
 
 const stroke = {
@@ -21,8 +20,8 @@ const stroke = {
 function chaosZoneColor(chaos: number): string {
   if (chaos >= 7) return "#ff0000";
   if (chaos >= 5) return "#ff6600";
-  if (chaos >= 3) return "#ffdd00";
-  if (chaos >= 1) return "#00aaff";
+  if (chaos >= 3) return "#cccc00";
+  if (chaos >= 1) return "#0088ff";
   return "#0066ff";
 }
 
@@ -37,26 +36,25 @@ export default function CombinedScenePage() {
   const code = (params.code as string).toUpperCase();
   const { state, currentRoll } = usePartySocket(code);
 
-  // Per-player transient animations + per-seat mic loudness (0..1).
   const [anims, setAnims] = useState<Record<string, Anim>>({});
   const [loudness, setLoudness] = useState<Record<number, number>>({});
   const prevChaos = useRef<Record<string, number>>({});
   const lastRollTs = useRef<number>(0);
   const nonce = useRef(0);
 
-  // Transparent page background for OBS.
+  // Opaque teal Win98 desktop background.
   useEffect(() => {
     const ph = document.documentElement.style.background;
     const pb = document.body.style.background;
-    document.documentElement.style.background = "transparent";
-    document.body.style.background = "transparent";
+    document.documentElement.style.background = "#008080";
+    document.body.style.background = "#008080";
     return () => {
       document.documentElement.style.background = ph;
       document.body.style.background = pb;
     };
   }, []);
 
-  // Diff chaos values → up/down animations.
+  // Chaos diffs → up/down animations.
   useEffect(() => {
     if (!state) return;
     const next: Record<string, Anim> = {};
@@ -68,12 +66,10 @@ export default function CombinedScenePage() {
       }
       prevChaos.current[p.id] = p.chaos;
     }
-    if (Object.keys(next).length) {
-      setAnims((a) => ({ ...a, ...next }));
-    }
+    if (Object.keys(next).length) setAnims((a) => ({ ...a, ...next }));
   }, [state]);
 
-  // Critical roll → gold burst on that player (chaos doesn't move on crit).
+  // Critical roll → gold burst.
   useEffect(() => {
     if (!currentRoll || currentRoll.outcome !== "critical") return;
     if (currentRoll.timestamp === lastRollTs.current) return;
@@ -84,70 +80,36 @@ export default function CombinedScenePage() {
 
   if (!state) return null;
 
-  const tiles = [...state.players].sort((a, b) => a.seat - b.seat);
+  const windows = [...state.players].sort((a, b) => a.seat - b.seat);
 
   return (
-    <div className="fixed inset-0 font-comic" style={{ background: "transparent" }}>
-      {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 flex justify-center pt-3 px-3 z-10">
-        <div className="flex items-stretch gap-2 flex-wrap justify-center">
-          <Banner color="#000080" label="MISSION" value={`${state.missionGoal ?? ""} ${state.missionTarget ?? ""}`.trim() || "—"} />
-          <Banner
-            color={state.suspicion >= 5 ? "#cc0000" : state.suspicion >= 3 ? "#cc6600" : "#006600"}
-            label="SUSPICION" value={`${state.suspicion} / 6`} blink={state.suspicion >= 5} />
-          <Banner color="#660099" label="ACTS" value={state.milestones.map((m) => (m.completed ? "✓" : "•")).join(" ")} />
-          <Banner color="#333333" label="SCENE" value={String(state.scene)} />
-          {state.nemesis && (
-            <Banner color={state.nemesis.defeated ? "#444" : "#990000"} label="NEMESIS"
-              value={`${state.nemesis.name}${state.nemesis.defeated ? " ✓" : ""}`} />
-          )}
-        </div>
+    <div className="win98-desktop win98-font fixed inset-0 flex flex-col">
+      {/* Window area */}
+      <div className="flex-1 p-3 grid gap-3 z-10" style={{
+        gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+        gridAutoRows: "1fr",
+      }}>
+        {windows.map((p) => (
+          <SeatWindow
+            key={p.id}
+            player={p}
+            anim={anims[p.id]}
+            loud={loudness[p.seat] ?? 0}
+            onLoud={(v) => setLoudness((l) => (l[p.seat] === v ? l : { ...l, [p.seat]: v }))}
+          />
+        ))}
       </div>
 
-      {/* Video tile grid */}
-      <div className="absolute inset-0 flex items-center justify-center pt-20 pb-6 px-4">
-        <div className="grid gap-4 w-full h-full" style={{
-          gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
-          gridAutoRows: "1fr",
-          maxHeight: "100%",
-        }}>
-          {tiles.map((p) => (
-            <SeatTile
-              key={p.id}
-              player={p}
-              anim={anims[p.id]}
-              loud={loudness[p.seat] ?? 0}
-              onLoud={(v) => setLoudness((l) => (l[p.seat] === v ? l : { ...l, [p.seat]: v }))}
-            />
-          ))}
-        </div>
-      </div>
+      {/* Verb event — Win98 warning dialog */}
+      {state.suspicionEvent.active && <VerbDialog state={state} />}
 
-      {/* Verb event banner */}
-      {state.suspicionEvent.active && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-20">
-          <div className="px-8 py-4" style={{ background: "rgba(120,0,0,0.92)", border: "5px solid #ffcc00", borderRadius: 12 }}>
-            <p className="font-impact text-5xl text-[#ffcc00]" style={stroke}>&#9888; SUSPICION MAXED! &#9888;</p>
-            <p className="text-2xl text-white font-bold mt-2" style={stroke}>
-              {state.suspicionEvent.verbs.map((v) => v.verb).join("  •  ") || "Everyone shout a verb!"}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Taskbar HUD */}
+      <Taskbar state={state} />
     </div>
   );
 }
 
-function Banner({ color, label, value, blink }: { color: string; label: string; value: string; blink?: boolean }) {
-  return (
-    <div className={`px-3 py-1 ${blink ? "blink" : ""}`} style={{ background: color, border: "3px solid #fff", borderRadius: 6 }}>
-      <span className="text-[#ffff66] font-bold text-sm uppercase mr-2" style={stroke}>{label}</span>
-      <span className="text-white font-bold text-lg" style={stroke}>{value}</span>
-    </div>
-  );
-}
-
-function SeatTile({
+function SeatWindow({
   player, anim, loud, onLoud,
 }: {
   player: GameState["players"][0];
@@ -159,13 +121,11 @@ function SeatTile({
   const id = streamIdFor(player.seat, player.isGM);
   const src = sceneTileUrl(player.seat, player.isGM);
 
-  // Ask VDO for loudness of this tile's stream, and listen for updates.
+  // VDO loudness → mic glow.
   useEffect(() => {
-    const win = () => iframeRef.current?.contentWindow;
-    const start = () => win()?.postMessage({ getLoudness: true }, "*");
+    const start = () => iframeRef.current?.contentWindow?.postMessage({ getLoudness: true }, "*");
     const t = setInterval(start, 3000);
     start();
-
     const onMsg = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return;
       const d = e.data;
@@ -179,7 +139,6 @@ function SeatTile({
           if (typeof v === "number") raw = Math.max(raw, v);
         }
       }
-      // Normalize: VDO loudness is roughly 0-100 (sometimes 0-1).
       const norm = raw > 1 ? raw / 100 : raw;
       onLoud(Math.max(0, Math.min(1, norm)));
     };
@@ -188,86 +147,156 @@ function SeatTile({
   }, [onLoud]);
 
   const isGM = player.isGM;
-  const borderColor = isGM ? "#ffffff" : player.isFullGoblin ? "#ff0000" : player.isFullHuman ? "#00aaff" : chaosZoneColor(player.chaos);
   const talking = loud > 0.06;
   const glow = talking ? Math.min(1, (loud - 0.06) / 0.5) : 0;
+
+  const titlebarClass = isGM
+    ? ""
+    : player.isFullGoblin
+      ? "win98-titlebar-red"
+      : player.isFullHuman
+        ? "win98-titlebar-cyan"
+        : "";
 
   const flashClass = anim?.kind === "up" ? "tile-flash-up" : anim?.kind === "down" ? "tile-flash-down" : anim?.kind === "crit" ? "tile-flash-crit" : "";
 
   return (
     <div
-      key={anim?.nonce /* remount to replay border flash */}
-      className={`relative ${flashClass}`}
+      key={anim?.nonce}
+      className={`win98-window ${flashClass}`}
       style={{
-        border: `5px solid ${borderColor}`,
-        borderRadius: 12,
-        overflow: "hidden",
-        background: "#000",
-        // Talking glow (smoothed via transition).
         boxShadow: talking
-          ? `0 0 ${10 + glow * 34}px ${2 + glow * 10}px rgba(57,255,20,${0.45 + glow * 0.5})`
-          : "0 0 0 0 rgba(57,255,20,0)",
+          ? `0 0 ${10 + glow * 34}px ${2 + glow * 10}px rgba(57,255,20,${0.5 + glow * 0.5}), 2px 2px 0 rgba(0,0,0,0.5)`
+          : "2px 2px 0 rgba(0,0,0,0.5)",
         transition: "box-shadow 0.12s ease-out",
-        minHeight: 150,
+        minHeight: 160,
       }}
     >
-      {/* Video */}
-      <iframe
-        ref={iframeRef}
-        title={`seat-${id}`}
-        src={src}
-        className="absolute inset-0 w-full h-full"
-        style={{ border: "none" }}
-        allow="autoplay; fullscreen"
-      />
-
-      {/* Chaos badge on the top border (players only) */}
-      {!isGM && (
-        <div
-          className="absolute left-1/2 -translate-x-1/2 -top-1 flex items-center justify-center font-impact"
-          style={{
-            width: 46, height: 46, borderRadius: "50%",
-            background: borderColor, color: "#000",
-            border: "3px solid #000", fontSize: 26, lineHeight: "40px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.6)", zIndex: 5,
-          }}
-          title={`Chaos ${player.chaos}`}
-        >
-          {player.chaos}
-        </div>
-      )}
-
-      {/* Nameplate (bottom) */}
-      <div className="absolute bottom-0 left-0 right-0 px-2 py-1 flex items-center justify-between"
-        style={{ background: "rgba(0,0,20,0.78)" }}>
-        <span className="text-white font-bold text-base truncate" style={stroke}>
-          {isGM ? "★ " : ""}{player.name}
+      {/* Title bar */}
+      <div className={`win98-titlebar ${titlebarClass}`}>
+        <span className="truncate">
+          {isGM ? "👑 " : "👹 "}{player.name}{isGM ? "" : `  —  Chaos ${player.chaos}`}.exe
         </span>
+        <span className="flex gap-0.5">
+          <span className="win98-tbtn">_</span>
+          <span className="win98-tbtn">□</span>
+          <span className="win98-tbtn">✕</span>
+        </span>
+      </div>
+
+      {/* Video (window content) */}
+      <div className="relative flex-1" style={{ minHeight: 90, background: "#000" }}>
+        <iframe
+          ref={iframeRef}
+          title={`seat-${id}`}
+          src={src}
+          className="absolute inset-0 w-full h-full"
+          style={{ border: "none" }}
+          allow="autoplay; fullscreen"
+        />
+        {/* Adv/Dis flag */}
         {!isGM && player.nextRollModifier && (
-          <span className="text-xs font-bold" style={{ ...stroke, color: player.nextRollModifier === "advantage" ? "#00ff00" : "#ffcc00" }}>
+          <span className="absolute top-1 right-1 text-xs font-bold px-1"
+            style={{ ...stroke, color: player.nextRollModifier === "advantage" ? "#00ff00" : "#ffcc00", background: "rgba(0,0,0,0.5)" }}>
             {player.nextRollModifier === "advantage" ? "ADV" : "DIS"}
           </span>
         )}
+        {/* Animations */}
+        {anim?.kind === "up" && (
+          <span key={anim.nonce} className="float-up absolute left-1/2 top-1/2 font-impact text-4xl text-[#ff3030] pointer-events-none" style={stroke}>▲ +1</span>
+        )}
+        {anim?.kind === "down" && (
+          <span key={anim.nonce} className="float-down absolute left-1/2 top-1/2 font-impact text-4xl text-[#30aaff] pointer-events-none" style={stroke}>▼ −1</span>
+        )}
+        {anim?.kind === "crit" && (
+          <span key={anim.nonce} className="crit-burst absolute left-1/2 top-1/2 font-impact text-4xl text-[#ffff00] pointer-events-none whitespace-nowrap" style={stroke}>★ CRIT! ★</span>
+        )}
       </div>
 
-      {/* Status tags */}
-      {player.isFullGoblin && (
-        <span className="absolute top-1 right-1 text-[#ffcc00] font-bold text-xs blink px-1" style={{ ...stroke, background: "rgba(0,0,0,0.5)" }}>FULL GOBLIN</span>
+      {/* Status bar — chaos meter (players only) */}
+      {!isGM ? (
+        <div className="win98-statusbar">
+          <span className="win98-sunken px-1" style={{ fontWeight: "bold", color: chaosZoneColor(player.chaos) }}>
+            {player.isFullGoblin ? "FULL GOBLIN!" : player.isFullHuman ? "FULL HUMAN" : `Chaos ${player.chaos}`}
+          </span>
+          <span className="flex gap-px flex-1">
+            {Array.from({ length: CHAOS_MAX + 1 }).map((_, i) => (
+              <span key={i} style={{
+                flex: 1, height: 10,
+                background: i <= player.chaos ? chaosZoneColor(i) : "#808080",
+                border: "1px solid #000",
+              }} />
+            ))}
+          </span>
+        </div>
+      ) : (
+        <div className="win98-statusbar">
+          <span className="win98-sunken px-1" style={{ fontWeight: "bold" }}>Game Master</span>
+        </div>
       )}
-      {player.isFullHuman && (
-        <span className="absolute top-1 right-1 text-[#66ddff] font-bold text-xs px-1" style={{ ...stroke, background: "rgba(0,0,0,0.5)" }}>FULL HUMAN</span>
-      )}
+    </div>
+  );
+}
 
-      {/* Chaos change animations */}
-      {anim && anim.kind === "up" && (
-        <span key={anim.nonce} className="float-up absolute left-1/2 top-1/2 font-impact text-4xl text-[#ff3030] pointer-events-none" style={stroke}>▲ +1</span>
+function VerbDialog({ state }: { state: GameState }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center z-30">
+      <div className="win98-window" style={{ width: 420, maxWidth: "90%" }}>
+        <div className="win98-titlebar win98-titlebar-red">
+          <span>⚠ Suspicion.exe</span>
+          <span className="win98-tbtn">✕</span>
+        </div>
+        <div className="p-4 flex gap-3" style={{ color: "#000" }}>
+          <span style={{ fontSize: 40, lineHeight: "40px" }}>⚠️</span>
+          <div className="flex-1">
+            <p className="font-bold text-sm mb-2">
+              Suspicion has reached MAXIMUM! Everyone shout a verb — the GM decides what happens.
+            </p>
+            <div className="win98-sunken bg-white p-2 min-h-[44px] flex flex-wrap gap-2"
+              style={{ borderColor: "#808080" }}>
+              {state.suspicionEvent.verbs.length === 0 ? (
+                <span className="text-[#808080] italic text-sm">Waiting for verbs…</span>
+              ) : (
+                state.suspicionEvent.verbs.map((v, i) => (
+                  <span key={i} className="text-sm font-bold" style={{ background: "#000080", color: "#fff", padding: "1px 6px" }}>
+                    {v.verb}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-center pb-3">
+          <span className="win98-taskbtn" style={{ padding: "3px 24px" }}>OK</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Taskbar({ state }: { state: GameState }) {
+  const acts = state.milestones.map((m) => (m.completed ? "✓" : "•")).join(" ");
+  return (
+    <div className="win98-taskbar win98-font flex items-center gap-1 p-1 z-20">
+      <span className="win98-start">
+        <span style={{ fontSize: 14 }}>👹</span> Chaos Goblins
+      </span>
+      <span className="win98-taskbtn" style={{ maxWidth: 280 }}>
+        📁 {state.missionGoal || "Mission"} {state.missionTarget || ""}
+      </span>
+      {state.nemesis && (
+        <span className="win98-taskbtn" style={{ maxWidth: 200 }}>
+          💀 {state.nemesis.name}{state.nemesis.defeated ? " ✓" : ""}
+        </span>
       )}
-      {anim && anim.kind === "down" && (
-        <span key={anim.nonce} className="float-down absolute left-1/2 top-1/2 font-impact text-4xl text-[#30aaff] pointer-events-none" style={stroke}>▼ −1</span>
-      )}
-      {anim && anim.kind === "crit" && (
-        <span key={anim.nonce} className="crit-burst absolute left-1/2 top-1/2 font-impact text-4xl text-[#ffff00] pointer-events-none whitespace-nowrap" style={stroke}>★ CRIT! ★</span>
-      )}
+      <span className="flex-1" />
+      <span className="win98-tray">
+        <span style={{ fontWeight: "bold", color: state.suspicion >= 5 ? "#cc0000" : "#000" }} className={state.suspicion >= 5 ? "blink" : ""}>
+          ⚠ {state.suspicion}/6
+        </span>
+        <span>Acts {acts}</span>
+        <span>Scene {state.scene}</span>
+      </span>
     </div>
   );
 }

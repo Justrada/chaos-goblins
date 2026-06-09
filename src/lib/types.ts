@@ -147,7 +147,8 @@ export type ClientMessage =
   | { type: "gm-remove-item"; playerId: string; itemIndex: number }
   | { type: "gm-resolve-suspicion-event" }
   | { type: "gm-use-hotline" }
-  | { type: "gm-next-scene" };
+  | { type: "gm-next-scene" }
+  | { type: "play-again" };
 
 export type ServerMessage =
   | { type: "state"; state: GameState }

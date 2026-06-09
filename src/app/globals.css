@@ -389,3 +389,113 @@ body {
 .tile-flash-up   { animation: tile-flash-up 0.8s ease-out; }
 .tile-flash-down { animation: tile-flash-down 0.8s ease-out; }
 .tile-flash-crit { animation: tile-flash-crit 1.2s ease-out; }
+
+/* ========================================
+   WINDOWS 98 DESKTOP (combined scene)
+   ======================================== */
+.win98-font {
+  font-family: Tahoma, "MS Sans Serif", Geneva, Arial, sans-serif;
+}
+.win98-desktop {
+  background: #008080;
+}
+.win98-window {
+  background: #c0c0c0;
+  border: 3px outset #c0c0c0;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.win98-titlebar {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px 2px 5px;
+  user-select: none;
+}
+.win98-titlebar-red {
+  background: linear-gradient(90deg, #800000, #d01818);
+}
+.win98-titlebar-cyan {
+  background: linear-gradient(90deg, #006a6a, #18b0c8);
+}
+.win98-titlebar-inactive {
+  background: linear-gradient(90deg, #7f7f7f, #b5b5b5);
+}
+.win98-tbtn {
+  width: 18px;
+  height: 16px;
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  color: #000;
+  font-size: 10px;
+  line-height: 11px;
+  text-align: center;
+  font-weight: bold;
+}
+.win98-statusbar {
+  border-top: 2px groove #ffffff;
+  background: #c0c0c0;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #000;
+  font-size: 12px;
+}
+.win98-sunken {
+  border: 2px inset #c0c0c0;
+  background: #c0c0c0;
+}
+.win98-taskbar {
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+}
+.win98-start {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  font-weight: bold;
+  color: #000;
+  padding: 2px 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.win98-taskbtn {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  color: #000;
+  padding: 2px 8px;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.win98-tray {
+  border: 1px inset #c0c0c0;
+  background: #c0c0c0;
+  color: #000;
+  padding: 2px 6px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.win98-desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 64px;
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+  text-shadow: 1px 1px 0 #000;
+}

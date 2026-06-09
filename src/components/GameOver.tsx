@@ -2,9 +2,17 @@
 
 import { useEffect } from "react";
 import confetti from "canvas-confetti";
-import { GameState } from "@/lib/types";
+import { GameState, ClientMessage } from "@/lib/types";
 
-export default function GameOver({ state }: { state: GameState }) {
+export default function GameOver({
+  state,
+  isGM,
+  send,
+}: {
+  state: GameState;
+  isGM: boolean;
+  send: (msg: ClientMessage) => void;
+}) {
   const allMilestonesComplete = state.milestones.every((m) => m.completed);
   const nonGMPlayers = state.players.filter((p) => !p.isGM);
 
@@ -87,7 +95,18 @@ export default function GameOver({ state }: { state: GameState }) {
 
         <hr className="hr-rainbow" />
 
-        <p className="text-xl text-[#00ffff] font-bold">Refresh to play again!</p>
+        {isGM ? (
+          <button
+            onClick={() => send({ type: "play-again" })}
+            className="btn-98 btn-98-green btn-98-xl"
+          >
+            &#8635; Play Again (same room)
+          </button>
+        ) : (
+          <p className="text-xl text-[#00ffff] font-bold blink">
+            Waiting for the GM to start a new game...
+          </p>
+        )}
       </div>
     </div>
   );

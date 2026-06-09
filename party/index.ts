@@ -33,6 +33,7 @@ import {
   completeAct,
   nextScene,
   useHotline,
+  resetGame,
 } from "../src/lib/gameLogic";
 
 export default class ChaosGoblinsServer implements Party.Server {
@@ -281,6 +282,13 @@ export default class ChaosGoblinsServer implements Party.Server {
       case "gm-next-scene": {
         if (!senderPlayer?.isGM) return;
         nextScene(this.state);
+        this.broadcast({ type: "state", state: this.state });
+        break;
+      }
+
+      case "play-again": {
+        if (!senderPlayer?.isGM) return;
+        resetGame(this.state);
         this.broadcast({ type: "state", state: this.state });
         break;
       }
